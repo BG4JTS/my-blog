@@ -29,14 +29,12 @@ export const siteConfig: SiteConfig = {
 		enable: true, // Display the table of contents on the right side of the post
 		depth: 2, // Maximum heading depth to show in the table, from 1 to 3
 	},
-	favicon: [
-		// Leave this array empty to use the default favicon
-		// {
-		//   src: '/favicon/icon.png',    // Path of the favicon, relative to the /public directory
-		//   theme: 'light',              // (Optional) Either 'light' or 'dark', set only if you have different favicons for light and dark mode
-		//   sizes: '32x32',              // (Optional) Size of the favicon, set only if you have favicons of different sizes
-		// }
-	],
+    favicon: [
+    { src: '/favicon.ico', sizes: 'any', theme: null },
+    { src: '/favicon-16x16.png', sizes: '16x16', theme: null },
+    { src: '/favicon-32x32.png', sizes: '32x32', theme: null },
+    { src: '/apple-touch-icon.png', sizes: '180x180', theme: null },
+    ],
 };
 
 export const navBarConfig: NavBarConfig = {
