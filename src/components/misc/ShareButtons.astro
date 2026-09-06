@@ -1,0 +1,559 @@
+---
+// src/components/misc/ShareButtons.astro
+import { Icon } from "astro-icon/components";
+
+export interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+---
+
+<div
+  class="share-wrapper"
+  data-url={url}
+  data-title={title}
+>
+  <!-- 触发按钮 -->
+  <button
+    id="share-toggle"
+    class="share-toggle-btn"
+    aria-label="分享本文"
+    title="分享本文"
+  >
+    <Icon name="material-symbols:share" class="text-xl" />
+  </button>
+
+  <!-- 分享面板 -->
+  <div
+    id="share-panel"
+    class="share-panel card-base hidden"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div class="share-header">
+      <span class="share-title">分享到</span>
+      <button id="close-share" class="close-btn" aria-label="关闭">
+        <Icon name="material-symbols:close" class="text-lg" />
+      </button>
+    </div>
+
+    <!-- 三个分享按钮（水平排列） -->
+    <div class="share-actions">
+      <button class="share-action" data-action="copy" title="复制链接">
+        <Icon name="material-symbols:content-copy" class="text-2xl" />
+        <span>复制链接</span>
+      </button>
+      <button class="share-action" data-action="copy-with-title" title="复制标题+链接">
+        <Icon name="material-symbols:link" class="text-2xl" />
+        <span>标题+链接</span>
+      </button>
+      <button class="share-action" data-action="qq" title="分享到 QQ">
+        <Icon name="material-symbols:chat" class="text-2xl" />
+        <span>QQ</span>
+      </button>
+    </div>
+
+    <!-- 二维码区域（自动生成） -->
+    <div class="qrcode-section">
+      <div class="qrcode-divider"></div>
+      <div class="qrcode-header">
+        <span class="qrcode-label">二维码</span>
+        <div class="qrcode-downloads">
+          <button id="download-png" class="qr-download-btn">
+            <Icon name="material-symbols:image" class="text-base" /> PNG
+          </button>
+          <button id="download-svg" class="qr-download-btn">
+            <Icon name="material-symbols:code" class="text-base" /> SVG
+          </button>
+        </div>
+      </div>
+      <div id="qrcode-container" class="qrcode-container">
+        <!-- 占位骨架 -->
+        <div id="qrcode-placeholder" class="qrcode-placeholder">
+          <div class="qrcode-skeleton"></div>
+          <div class="qrcode-loading">
+            <Icon name="material-symbols:refresh" class="animate-spin text-2xl" />
+            <span>生成中...</span>
+          </div>
+        </div>
+        <!-- 实际二维码 -->
+        <div id="qrcode-box" class="qrcode-box hidden"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ---- 整体容器：右对齐 ---- */
+  .share-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    margin: 0.5rem 0;
+    position: relative;
+  }
+
+  /* ---- 触发按钮 ---- */
+  .share-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    flex-shrink: 0;
+  }
+  .share-toggle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary, #d62626);
+  }
+  .share-toggle-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* ---- 分享面板 ---- */
+  .share-panel {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 0;
+    left: auto;
+    transform: none;
+    min-width: 240px;
+    max-width: 300px;
+    padding: 16px 18px 18px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 18px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    z-index: 50;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    transform-origin: bottom right;
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+    pointer-events: none;
+  }
+  .share-panel.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .share-panel.hidden {
+    display: none;
+  }
+  .share-panel:not(.hidden).visible {
+    display: block;
+  }
+
+  /* ---- 暗色模式 ---- */
+  html.dark .share-toggle-btn {
+    background: #1e1e1e;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e5e5e5;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+  html.dark .share-toggle-btn:hover {
+    border-color: var(--primary, #d62626);
+  }
+
+  html.dark .share-panel {
+    background: rgba(26, 26, 26, 0.96);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  }
+
+  html.dark .share-title,
+  html.dark .qrcode-label {
+    color: #e5e5e5;
+  }
+  html.dark .close-btn {
+    color: #999;
+  }
+  html.dark .close-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  html.dark .share-action {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e5e5e5;
+  }
+  html.dark .share-action:hover {
+    background: rgba(214, 38, 38, 0.15);
+    border-color: var(--primary, #d62626);
+  }
+  html.dark .qrcode-divider {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  html.dark .qr-download-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: #e5e5e5;
+  }
+  html.dark .qr-download-btn:hover {
+    background: rgba(214, 38, 38, 0.15);
+    border-color: var(--primary, #d62626);
+  }
+  html.dark .qrcode-skeleton {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  html.dark .qrcode-loading {
+    color: #999;
+  }
+
+  /* ---- 分享按钮（水平排列）---- */
+  .share-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .share-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+  }
+  .close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .close-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .share-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: space-around;
+  }
+  .share-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 8px 6px;
+    flex: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #1a1a1a;
+    font-size: 0.7rem;
+    font-weight: 500;
+    min-width: 0;
+  }
+  .share-action:hover {
+    background: rgba(214, 38, 38, 0.06);
+    border-color: var(--primary, #d62626);
+    transform: translateY(-2px);
+  }
+  .share-action:active {
+    transform: scale(0.96);
+  }
+  .share-action span {
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  /* ---- 二维码区域 ---- */
+  .qrcode-section {
+    margin-top: 14px;
+  }
+  .qrcode-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin-bottom: 12px;
+  }
+  .qrcode-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .qrcode-label {
+    font-weight: 500;
+    font-size: 0.8rem;
+    color: #1a1a1a;
+  }
+  .qrcode-downloads {
+    display: flex;
+    gap: 6px;
+  }
+  .qr-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: #1a1a1a;
+    transition: all 0.2s ease;
+  }
+  .qr-download-btn:hover {
+    background: rgba(214, 38, 38, 0.06);
+    border-color: var(--primary, #d62626);
+  }
+
+  .qrcode-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+  }
+  .qrcode-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+  .qrcode-skeleton {
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
+    background: #f0f0f0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .qrcode-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #888;
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .qrcode-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .qrcode-box.hidden {
+    display: none;
+  }
+  .qrcode-box canvas,
+  .qrcode-box svg {
+    display: block;
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
+    background: #ffffff;
+    padding: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  /* ---- 响应式 ---- */
+  @media (max-width: 480px) {
+    .share-panel {
+      min-width: 200px;
+      padding: 14px;
+    }
+    .share-action {
+      font-size: 0.65rem;
+      padding: 6px 4px;
+    }
+    .qrcode-skeleton,
+    .qrcode-box canvas,
+    .qrcode-box svg {
+      width: 100px;
+      height: 100px;
+    }
+    .qrcode-downloads {
+      flex-direction: column;
+      gap: 4px;
+    }
+    .qr-download-btn {
+      padding: 2px 8px;
+      font-size: 0.65rem;
+    }
+  }
+</style>
+
+<script type="module">
+  (function() {
+    const wrapper = document.querySelector('.share-wrapper');
+    if (!wrapper) return;
+
+    const url = wrapper.dataset.url;
+    const title = wrapper.dataset.title;
+
+    const toggleBtn = document.getElementById('share-toggle');
+    const panel = document.getElementById('share-panel');
+    const closeBtn = document.getElementById('close-share');
+    const qrPlaceholder = document.getElementById('qrcode-placeholder');
+    const qrBox = document.getElementById('qrcode-box');
+    const downloadPng = document.getElementById('download-png');
+    const downloadSvg = document.getElementById('download-svg');
+
+    let isOpen = false;
+    let qrGenerated = false;
+
+    function togglePanel(show) {
+      isOpen = (show !== undefined) ? show : !isOpen;
+      if (isOpen) {
+        panel.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          panel.classList.add('visible');
+        });
+        // 面板打开时自动生成二维码
+        if (!qrGenerated) {
+          generateQR();
+        }
+      } else {
+        panel.classList.remove('visible');
+        setTimeout(() => {
+          panel.classList.add('hidden');
+        }, 250);
+      }
+    }
+
+    // ---- 生成二维码 ----
+    async function generateQR() {
+      try {
+        // 动态导入 qrcode
+        const QRCode = (await import('https://esm.sh/qrcode@1.5.4')).default;
+
+        // 创建 canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+
+        QRCode.toCanvas(canvas, url, { width: 240, margin: 1 }, function(error) {
+          if (error) {
+            console.error(error);
+            qrPlaceholder.innerHTML = '<span style="color:red;">生成失败</span>';
+            return;
+          }
+          // 隐藏占位，显示二维码
+          qrPlaceholder.style.display = 'none';
+          qrBox.classList.remove('hidden');
+          qrBox.innerHTML = '';
+          qrBox.appendChild(canvas);
+          qrGenerated = true;
+        });
+      } catch (err) {
+        console.error(err);
+        qrPlaceholder.innerHTML = '<span style="color:red;">加载二维码库失败</span>';
+      }
+    }
+
+    // ---- 复制仅 URL ----
+    async function copyLink() {
+      try {
+        await navigator.clipboard.writeText(url);
+        const btn = document.querySelector('[data-action="copy"]');
+        const span = btn.querySelector('span');
+        const orig = span.textContent;
+        span.textContent = '已复制!';
+        setTimeout(() => { span.textContent = orig; }, 1500);
+      } catch {
+        alert('复制失败，请手动复制');
+      }
+    }
+
+    // ---- 复制 标题 + URL ----
+    async function copyWithTitle() {
+      const text = `【${title}】${url}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        const btn = document.querySelector('[data-action="copy-with-title"]');
+        const span = btn.querySelector('span');
+        const orig = span.textContent;
+        span.textContent = '已复制!';
+        setTimeout(() => { span.textContent = orig; }, 1500);
+      } catch {
+        alert('复制失败，请手动复制');
+      }
+    }
+
+    // ---- QQ 分享 ----
+    function shareQQ() {
+      const shareUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
+      window.open(shareUrl, '_blank', 'width=600,height=500');
+    }
+
+    // ---- 下载 PNG ----
+    function downloadPNG() {
+      const canvas = qrBox.querySelector('canvas');
+      if (!canvas) {
+        alert('二维码尚未生成');
+        return;
+      }
+      const link = document.createElement('a');
+      link.download = `qrcode-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // ---- 下载 SVG ----
+    async function downloadSVG() {
+      try {
+        const QRCode = (await import('https://esm.sh/qrcode@1.5.4')).default;
+        const svgStr = await QRCode.toString(url, { type: 'svg', margin: 1, width: 240 });
+        const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+        const link = document.createElement('a');
+        link.download = `qrcode-${Date.now()}.svg`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+      } catch (err) {
+        console.error(err);
+        alert('生成 SVG 失败');
+      }
+    }
+
+    // ---- 事件绑定 ----
+    toggleBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePanel();
+    });
+
+    closeBtn?.addEventListener('click', () => togglePanel(false));
+
+    document.addEventListener('click', (e) => {
+      if (isOpen && !panel.contains(e.target) && e.target !== toggleBtn) {
+        togglePanel(false);
+      }
+    });
+
+    document.querySelector('[data-action="copy"]')?.addEventListener('click', copyLink);
+    document.querySelector('[data-action="copy-with-title"]')?.addEventListener('click', copyWithTitle);
+    document.querySelector('[data-action="qq"]')?.addEventListener('click', shareQQ);
+
+    downloadPng?.addEventListener('click', downloadPNG);
+    downloadSvg?.addEventListener('click', downloadSVG);
+  })();
+</script>

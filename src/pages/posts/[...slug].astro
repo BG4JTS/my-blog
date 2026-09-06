@@ -1,4 +1,5 @@
 ---
+import ShareButtons from '@components/misc/ShareButtons.astro';
 import GiscusComment from '@/components/widget/GiscusComment.astro';
 import path from "node:path";
 import License from "@components/misc/License.astro";
@@ -110,7 +111,7 @@ const jsonLd = {
             <GiscusComment />
             
             {licenseConfig.enable && <License title={entry.data.title} slug={entry.slug} pubDate={entry.data.published} class="mb-6 rounded-xl license-container onload-animation"></License>}
-
+            <ShareButtons url={Astro.url} title={entry.data.title} />
         </div>
     </div>
 
