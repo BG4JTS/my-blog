@@ -9,6 +9,7 @@ category: '技术'
 draft: false
 sticky: true
 author: 'BG4JTS | DeepSeek'
+slug: ai
 ---
 
 作者：BG4JTS | DeepSeek
