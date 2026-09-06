@@ -15,7 +15,7 @@ const { url, title } = Astro.props;
   data-url={url}
   data-title={title}
 >
-  <!-- 触发按钮 -->
+  <!-- 触发按钮：长条形，带图标和文字 -->
   <button
     id="share-toggle"
     class="share-toggle-btn"
@@ -23,6 +23,7 @@ const { url, title } = Astro.props;
     title="分享本文"
   >
     <Icon name="material-symbols:share" class="text-xl" />
+    <span>Share</span>
   </button>
 
   <!-- 分享面板 -->
@@ -39,7 +40,6 @@ const { url, title } = Astro.props;
       </button>
     </div>
 
-    <!-- 三个分享按钮（水平排列） -->
     <div class="share-actions">
       <button class="share-action" data-action="copy" title="复制链接">
         <Icon name="material-symbols:content-copy" class="text-2xl" />
@@ -55,7 +55,7 @@ const { url, title } = Astro.props;
       </button>
     </div>
 
-    <!-- 二维码区域（自动生成） -->
+    <!-- 二维码区域 -->
     <div class="qrcode-section">
       <div class="qrcode-divider"></div>
       <div class="qrcode-header">
@@ -70,7 +70,6 @@ const { url, title } = Astro.props;
         </div>
       </div>
       <div id="qrcode-container" class="qrcode-container">
-        <!-- 占位骨架 -->
         <div id="qrcode-placeholder" class="qrcode-placeholder">
           <div class="qrcode-skeleton"></div>
           <div class="qrcode-loading">
@@ -78,7 +77,6 @@ const { url, title } = Astro.props;
             <span>生成中...</span>
           </div>
         </div>
-        <!-- 实际二维码 -->
         <div id="qrcode-box" class="qrcode-box hidden"></div>
       </div>
     </div>
@@ -95,35 +93,53 @@ const { url, title } = Astro.props;
     position: relative;
   }
 
-  /* ---- 触发按钮 ---- */
+  /* ---- 触发按钮：长条形 ---- */
   .share-toggle-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: 30px;
     background: #ffffff;
     border: 1px solid rgba(0, 0, 0, 0.08);
     color: #1a1a1a;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    font-size: 0.95rem;
+    font-weight: 500;
     flex-shrink: 0;
   }
   .share-toggle-btn:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     border-color: var(--primary, #d62626);
+    background: #fafafa;
   }
   .share-toggle-btn:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
+  }
+  .share-toggle-btn span {
+    line-height: 1;
+  }
+
+  /* ---- 深色模式按钮 ---- */
+  html.dark .share-toggle-btn {
+    background: #1e1e1e;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e5e5e5;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+  html.dark .share-toggle-btn:hover {
+    background: #2a2a2a;
+    border-color: var(--primary, #d62626);
   }
 
   /* ---- 分享面板 ---- */
   .share-panel {
     position: absolute;
-    bottom: calc(100% + 10px);
+    bottom: calc(100% + 12px);
     right: 0;
     left: auto;
     transform: none;
@@ -155,17 +171,7 @@ const { url, title } = Astro.props;
     display: block;
   }
 
-  /* ---- 暗色模式 ---- */
-  html.dark .share-toggle-btn {
-    background: #1e1e1e;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #e5e5e5;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
-  html.dark .share-toggle-btn:hover {
-    border-color: var(--primary, #d62626);
-  }
-
+  /* ---- 深色模式面板 ---- */
   html.dark .share-panel {
     background: rgba(26, 26, 26, 0.96);
     border-color: rgba(255, 255, 255, 0.08);
@@ -210,7 +216,7 @@ const { url, title } = Astro.props;
     color: #999;
   }
 
-  /* ---- 分享按钮（水平排列）---- */
+  /* ---- 面板内部样式 ---- */
   .share-header {
     display: flex;
     justify-content: space-between;
@@ -399,6 +405,10 @@ const { url, title } = Astro.props;
       padding: 2px 8px;
       font-size: 0.65rem;
     }
+    .share-toggle-btn {
+      padding: 8px 18px;
+      font-size: 0.85rem;
+    }
   }
 </style>
 
@@ -428,7 +438,6 @@ const { url, title } = Astro.props;
         requestAnimationFrame(() => {
           panel.classList.add('visible');
         });
-        // 面板打开时自动生成二维码
         if (!qrGenerated) {
           generateQR();
         }
@@ -440,13 +449,9 @@ const { url, title } = Astro.props;
       }
     }
 
-    // ---- 生成二维码 ----
     async function generateQR() {
       try {
-        // 动态导入 qrcode
         const QRCode = (await import('https://esm.sh/qrcode@1.5.4')).default;
-
-        // 创建 canvas
         const canvas = document.createElement('canvas');
         canvas.width = 240;
         canvas.height = 240;
@@ -457,7 +462,6 @@ const { url, title } = Astro.props;
             qrPlaceholder.innerHTML = '<span style="color:red;">生成失败</span>';
             return;
           }
-          // 隐藏占位，显示二维码
           qrPlaceholder.style.display = 'none';
           qrBox.classList.remove('hidden');
           qrBox.innerHTML = '';
@@ -466,11 +470,10 @@ const { url, title } = Astro.props;
         });
       } catch (err) {
         console.error(err);
-        qrPlaceholder.innerHTML = '<span style="color:red;">加载二维码库失败</span>';
+        qrPlaceholder.innerHTML = '<span style="color:red;">加载失败</span>';
       }
     }
 
-    // ---- 复制仅 URL ----
     async function copyLink() {
       try {
         await navigator.clipboard.writeText(url);
@@ -484,7 +487,6 @@ const { url, title } = Astro.props;
       }
     }
 
-    // ---- 复制 标题 + URL ----
     async function copyWithTitle() {
       const text = `【${title}】${url}`;
       try {
@@ -499,17 +501,15 @@ const { url, title } = Astro.props;
       }
     }
 
-    // ---- QQ 分享 ----
     function shareQQ() {
       const shareUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`;
       window.open(shareUrl, '_blank', 'width=600,height=500');
     }
 
-    // ---- 下载 PNG ----
     function downloadPNG() {
       const canvas = qrBox.querySelector('canvas');
       if (!canvas) {
-        alert('二维码尚未生成');
+        alert('请先生成二维码');
         return;
       }
       const link = document.createElement('a');
@@ -518,7 +518,6 @@ const { url, title } = Astro.props;
       link.click();
     }
 
-    // ---- 下载 SVG ----
     async function downloadSVG() {
       try {
         const QRCode = (await import('https://esm.sh/qrcode@1.5.4')).default;
@@ -535,7 +534,6 @@ const { url, title } = Astro.props;
       }
     }
 
-    // ---- 事件绑定 ----
     toggleBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       togglePanel();
