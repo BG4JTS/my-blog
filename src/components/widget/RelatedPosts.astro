@@ -1,0 +1,54 @@
+---
+// src/components/widget/RelatedPosts.astro
+import { getSortedPosts } from "@utils/content-utils";
+
+export interface Props {
+  currentSlug: string;
+  tags: string[];
+  limit?: number;
+}
+
+const { currentSlug, tags, limit = 4 } = Astro.props;
+
+// 获取所有文章
+const allPosts = await getSortedPosts();
+
+// 过滤掉当前文章
+const otherPosts = allPosts.filter(post => post.slug !== currentSlug);
+
+// 计算每篇文章与当前文章的标签重合度
+const scoredPosts = otherPosts.map(post => {
+  const postTags = post.data.tags || [];
+  const overlap = tags.filter(tag => postTags.includes(tag)).length;
+  return { post, overlap };
+});
+
+// 按重合度排序，取前 N 篇
+const related = scoredPosts
+  .filter(item => item.overlap > 0)  // 至少有1个共同标签
+  .sort((a, b) => b.overlap - a.overlap)
+  .slice(0, limit);
+---
+
+{related.length > 0 && (
+  <div class="related-posts mt-8 pt-6 border-t border-black/10 dark:border-white/10">
+    <h3 class="text-lg font-bold mb-4 text-black/80 dark:text-white/80">📚 相关文章</h3>
+    <ul class="space-y-2">
+      {related.map(({ post }) => (
+        <li>
+          <a
+            href={`/posts/${post.slug}/`}
+            class="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+          >
+            <span class="text-black/80 dark:text-white/80 group-hover:text-[var(--primary)] transition-colors">
+              {post.data.title}
+            </span>
+            <span class="text-xs text-black/40 dark:text-white/40">
+              {post.data.published.toLocaleDateString('zh-CN')}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+)}

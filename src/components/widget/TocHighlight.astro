@@ -1,0 +1,71 @@
+---
+// src/components/widget/TocHighlight.astro
+---
+
+<script>
+  (function() {
+    // 获取所有标题元素（h1-h6）
+    const headings = document.querySelectorAll('.markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4');
+    // 获取所有 TOC 链接
+    const tocLinks = document.querySelectorAll('.toc a');
+
+    if (headings.length === 0 || tocLinks.length === 0) return;
+
+    // 为每个标题收集位置信息
+    const headingPositions = Array.from(headings).map(heading => ({
+      id: heading.id,
+      top: heading.getBoundingClientRect().top + window.scrollY,
+    }));
+
+    function updateActiveToc() {
+      const scrollTop = window.scrollY + 100; // 偏移量，提前高亮
+
+      // 找到当前最接近的标题
+      let activeId = null;
+      for (let i = headingPositions.length - 1; i >= 0; i--) {
+        if (headingPositions[i].top <= scrollTop) {
+          activeId = headingPositions[i].id;
+          break;
+        }
+      }
+
+      // 更新 TOC 高亮
+      tocLinks.forEach(link => {
+        link.classList.remove('active', 'text-[var(--primary)]', 'font-medium');
+        const href = link.getAttribute('href');
+        if (href === `#${activeId}`) {
+          link.classList.add('active', 'text-[var(--primary)]', 'font-medium');
+          // 滚动 TOC 到可视区域
+          link.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
+
+    // 节流优化
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateActiveToc();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+
+    // 初始化
+    window.addEventListener('load', updateActiveToc);
+    document.addEventListener('astro:page-load', updateActiveToc);
+  })();
+</script>
+
+<style is:global>
+  .toc a.active {
+    border-left-color: var(--primary) !important;
+    padding-left: 12px;
+  }
+  .toc a {
+    border-left: 2px solid transparent;
+    transition: all 0.25s ease;
+  }
+</style>

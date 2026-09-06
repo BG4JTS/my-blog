@@ -1,0 +1,47 @@
+---
+// src/components/widget/ReadingProgress.astro
+---
+
+<div id="reading-progress" class="reading-progress fixed top-0 left-0 z-50 w-0 h-0.5 bg-[var(--primary)] transition-all duration-150"></div>
+
+<script>
+  (function() {
+    const progressBar = document.getElementById('reading-progress');
+    if (!progressBar) return;
+
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      const progress = Math.min((scrollTop / docHeight) * 100, 100);
+      progressBar.style.width = progress + '%';
+    }
+
+    // 节流优化
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateProgress();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+
+    // 页面加载完成后初始化
+    window.addEventListener('load', updateProgress);
+    // 切换文章时重新计算（适配 Swup 或 Astro 的 View Transitions）
+    document.addEventListener('astro:page-load', updateProgress);
+  })();
+</script>
+
+<style is:global>
+  .reading-progress {
+    box-shadow: 0 0 10px rgba(214, 38, 38, 0.3);
+  }
+  /* 暗色模式适配 */
+  html.dark .reading-progress {
+    box-shadow: 0 0 10px rgba(214, 38, 38, 0.5);
+  }
+</style>

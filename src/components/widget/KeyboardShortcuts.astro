@@ -1,0 +1,128 @@
+---
+// src/components/widget/KeyboardShortcuts.astro
+---
+
+<script>
+  (function() {
+    // ---- 获取导航链接（适配 Fuwari 结构） ----
+    function getPostNavigation() {
+      // ① 直接定位导航容器（上一篇/下一篇所在区域）
+      const navContainer = document.querySelector('.flex-col.md\\:flex-row.justify-between');
+      let prevLink = null, nextLink = null;
+
+      if (navContainer) {
+        const links = navContainer.querySelectorAll('a');
+        if (links.length >= 2) {
+          // 左侧链接（带左箭头图标）→ 下一篇
+          // 右侧链接（带右箭头图标）→ 上一篇
+          prevLink = links[0];  // 左侧
+          nextLink = links[1];  // 右侧
+        }
+      }
+
+      // ② 备选：通过 .btn-card 查找
+      if (!prevLink || !nextLink) {
+        const allLinks = document.querySelectorAll('.btn-card a');
+        if (allLinks.length >= 2) {
+          prevLink = allLinks[0];
+          nextLink = allLinks[1];
+        }
+      }
+
+      // ③ 如果 href 是 "#" 则视为无效（无文章）
+      if (prevLink && prevLink.getAttribute('href') === '#') prevLink = null;
+      if (nextLink && nextLink.getAttribute('href') === '#') nextLink = null;
+
+      const homeLink = document.querySelector('a[href="/"]');
+
+      return { prevLink, nextLink, homeLink };
+    }
+
+    // ---- 显示快捷键提示 ----
+    function showShortcutHint(key) {
+      const existing = document.querySelector('.shortcut-hint');
+      if (existing) existing.remove();
+
+      const hint = document.createElement('div');
+      hint.className = 'shortcut-hint fixed bottom-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl bg-black/80 dark:bg-white/90 text-white dark:text-black text-sm font-medium z-[999] transition-opacity duration-300';
+      hint.textContent = `⌨️ ${key}`;
+      document.body.appendChild(hint);
+      setTimeout(() => {
+        hint.style.opacity = '0';
+        setTimeout(() => hint.remove(), 300);
+      }, 800);
+    }
+
+    // ---- 键盘事件 ----
+    document.addEventListener('keydown', (e) => {
+      const tag = document.activeElement?.tagName || '';
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+
+      const { prevLink, nextLink, homeLink } = getPostNavigation();
+
+      // 调试：可在控制台查看是否找到链接
+      // console.log(`[快捷键] 按键: ${e.key}, 上一篇: ${!!prevLink}, 下一篇: ${!!nextLink}`);
+
+      switch (e.key) {
+        case 'j':
+        case 'J':   // 下一篇
+          e.preventDefault();
+          if (prevLink) {
+            showShortcutHint('下一篇 →');
+            window.location.href = prevLink.getAttribute('href');
+          } else {
+            showShortcutHint('没有下一篇');
+          }
+          break;
+        case 'k':
+        case 'K':   // 上一篇
+          e.preventDefault();
+          if (nextLink) {
+            showShortcutHint('← 上一篇');
+            window.location.href = nextLink.getAttribute('href');
+          } else {
+            showShortcutHint('没有上一篇');
+          }
+          break;
+        case 'h':
+        case 'H':   // 回到首页
+          e.preventDefault();
+          if (homeLink) {
+            showShortcutHint('🏠 回到首页');
+            window.location.href = '/';
+          }
+          break;
+        case 't':
+        case 'T':   // 回到顶部
+          e.preventDefault();
+          showShortcutHint('⬆️ 回到顶部');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          break;
+        case '?':
+          e.preventDefault();
+          showShortcutHint('j:下一篇 | k:上一篇 | h:首页 | t:顶部');
+          break;
+      }
+    });
+
+    // 页面切换后适配 Swup
+    document.addEventListener('astro:page-load', () => {
+      // 无需重新绑定事件，但可做清理（无操作）
+    });
+  })();
+</script>
+
+<style is:global>
+  .shortcut-hint {
+    animation: shortcutFade 0.3s ease-out;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+  }
+  html.dark .shortcut-hint {
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+  }
+  @keyframes shortcutFade {
+    from { opacity: 0; transform: translateX(-50%) scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+  }
+</style>

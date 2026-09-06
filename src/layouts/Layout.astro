@@ -1,7 +1,14 @@
 ---
+// ==================== 1. 导入区（新增 import） ====================
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
+
+// ✅ 新增：阅读进度条组件
+import ReadingProgress from '@components/widget/ReadingProgress.astro';
+
+// ✅ 新增：键盘快捷键组件
+import KeyboardShortcuts from '@components/widget/KeyboardShortcuts.astro';
 
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import { profileConfig, siteConfig } from "@/config";
@@ -151,11 +158,17 @@ const bannerOffset =
 	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}
 		  data-overlayscrollbars-initialize
 	>
+		<!-- ==================== 2. ✅ 阅读进度条（页面顶部） ==================== -->
+		<ReadingProgress />
+
 		<ConfigCarrier></ConfigCarrier>
 		<slot />
 
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>
+
+		<!-- ==================== 3. ✅ 键盘快捷键（页面底部） ==================== -->
+		<KeyboardShortcuts />
 	</body>
 </html>
 
@@ -194,6 +207,7 @@ const bannerOffset =
 }
 </style>
 
+<!-- 下面的 script 内容保持原样，不需要修改 -->
 <script>
 import 'overlayscrollbars/overlayscrollbars.css';
 import {
