@@ -3,7 +3,7 @@ title: 从CNN到Transformer，从“人工智障”到人工智能
 published: 2026-09-06
 updated: 2026-09-06
 description: '从1943年的神经元模型到GPT-6，以一个普通旁观者的视角，回望AI从“人工智障”进化为“人工智能”的八十年跌宕历程。'
-image: ''
+image: '/img/b/img.png'
 tags: [AI, Transformer, CNN, GPT, AGI]
 category: '技术'
 draft: false
