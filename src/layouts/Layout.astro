@@ -4,6 +4,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+import EasterEggs from '@components/widget/EasterEggs.astro';
 // ✅ 新增：阅读进度条组件
 import ReadingProgress from '@components/widget/ReadingProgress.astro';
 
@@ -160,7 +161,7 @@ const bannerOffset =
 	>
 		<!-- ==================== 2. ✅ 阅读进度条（页面顶部） ==================== -->
 		<ReadingProgress />
-
+		<EasterEggs />
 		<ConfigCarrier></ConfigCarrier>
 		<slot />
 

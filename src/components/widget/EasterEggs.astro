@@ -1,0 +1,320 @@
+---
+// src/components/widget/EasterEggs.astro
+// 纯客户端彩蛋合集
+---
+
+<script type="module">
+  (function() {
+    // =====================================================
+    // 1. 标题悬浮彩虹特效（保留）
+    // =====================================================
+    function applyRainbowEffect() {
+      const titleEl = document.querySelector('[data-pagefind-body]');
+      if (titleEl && !titleEl.classList.contains('rainbow-hover')) {
+        titleEl.classList.add('rainbow-hover');
+      }
+    }
+    // 等待 DOM 加载
+    setTimeout(applyRainbowEffect, 100);
+    document.addEventListener('astro:page-load', function() {
+      setTimeout(applyRainbowEffect, 100);
+    });
+
+    // =====================================================
+    // 2. Bio 连点彩蛋（点击 bio 5 次触发）
+    // =====================================================
+    let clickCount = 0;
+    let timer = null;
+
+    function findBio() {
+      // Fuwari 中 bio 的常见选择器
+      const selectors = [
+        '.profile-bio',
+        '.bio',
+        '.profile-description',
+        '.sidebar .text-sm.text-black\\/60',
+        '.sidebar .text-black\\/60',
+        '.sidebar p.text-sm',
+        '.sidebar .text-sm:not(.font-medium)',
+        '[data-bio]',
+        // 通过文本内容查找
+        '.sidebar .text-sm',
+        'aside p.text-sm',
+        '.profile p'
+      ];
+      
+      for (const sel of selectors) {
+        try {
+          const el = document.querySelector(sel);
+          if (el && el.textContent.trim().length > 0 && el.textContent.trim().length < 200) {
+            return el;
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      // 后备：在侧边栏中查找包含 bio 文本的元素
+      const sidebar = document.querySelector('.sidebar, aside, [data-sidebar]');
+      if (sidebar) {
+        const allText = sidebar.querySelectorAll('p, div, span');
+        for (const el of allText) {
+          const text = el.textContent.trim();
+          // bio 通常较短，且包含个人描述
+          if (text.length > 0 && text.length < 150 && !text.includes('©') && !text.includes('RSS')) {
+            // 检查是否在头像附近
+            const parent = el.closest('div');
+            if (parent && parent.querySelector('img')) {
+              return el;
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    // 调试：打印 bio 元素
+    setTimeout(() => {
+      const bio = findBio();
+      console.log('[EasterEgg] Bio 元素:', bio);
+      if (bio) {
+        bio.style.outline = '2px dashed rgba(214,38,38,0.3)';
+        bio.style.outlineOffset = '2px';
+        // 添加 data 属性方便定位
+        bio.setAttribute('data-bio', 'true');
+      } else {
+        console.warn('[EasterEgg] 未找到 Bio 元素，请在侧边栏中给 bio 添加 data-bio 属性');
+      }
+    }, 500);
+
+    function triggerCelebration() {
+      const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#9b59b6', '#ff9ff3', '#feca57'];
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = 6 + Math.random() * 10;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 0.5;
+        const duration = 1.5 + Math.random() * 2;
+        const rotate = Math.random() * 720;
+
+        confetti.style.cssText = `
+          position: fixed;
+          top: -10px;
+          left: ${left}%;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+          z-index: 99999;
+          pointer-events: none;
+          animation: confettiFall ${duration}s ease-in ${delay}s forwards;
+          transform: rotate(${rotate}deg);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        `;
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), (duration + delay) * 1000 + 500);
+      }
+    }
+
+    // 添加 confetti 动画关键帧
+    if (!document.querySelector('#confetti-style')) {
+      const style = document.createElement('style');
+      style.id = 'confetti-style';
+      style.textContent = `
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // 全局点击监听（使用 capture 阶段）
+    document.addEventListener('click', function(e) {
+      const bio = findBio();
+      if (!bio) return;
+      
+      // 检查点击是否在 bio 元素内
+      if (!bio.contains(e.target)) return;
+
+      // 如果点击的是链接，阻止跳转
+      const link = e.target.closest('a');
+      if (link) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      clickCount++;
+      clearTimeout(timer);
+
+      if (clickCount >= 5) {
+        clickCount = 0;
+        triggerCelebration();
+
+        const msg = document.createElement('div');
+        msg.className = 'easter-egg-toast fixed top-1/4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl bg-black/90 dark:bg-white/90 text-white dark:text-black text-lg font-medium z-[9999] shadow-2xl';
+        msg.textContent = '🎉 你发现了隐藏彩蛋！';
+        document.body.appendChild(msg);
+        setTimeout(() => {
+          msg.style.opacity = '0';
+          msg.style.transition = 'opacity 0.5s';
+          setTimeout(() => msg.remove(), 500);
+        }, 2000);
+      } else {
+        timer = setTimeout(() => { clickCount = 0; }, 3000);
+        // 显示点击进度
+        const progress = document.querySelector('.click-progress');
+        if (!progress) {
+          const p = document.createElement('div');
+          p.className = 'click-progress fixed top-1/4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/80 dark:bg-white/80 text-white dark:text-black text-sm z-[9999] pointer-events-none transition-opacity';
+          p.textContent = `⚡ ${clickCount}/5`;
+          document.body.appendChild(p);
+          setTimeout(() => {
+            p.style.opacity = '0';
+            setTimeout(() => p.remove(), 300);
+          }, 1500);
+        } else {
+          progress.textContent = `⚡ ${clickCount}/5`;
+          progress.style.opacity = '1';
+          clearTimeout(progress._timer);
+          progress._timer = setTimeout(() => {
+            progress.style.opacity = '0';
+            setTimeout(() => progress.remove(), 300);
+          }, 1500);
+        }
+      }
+    }, true);
+
+    // =====================================================
+    // 3. 头像旋转（悬停 360° 旋转）
+    // =====================================================
+    function applyAvatarRotation() {
+      const selectors = [
+        'img.avatar',
+        '.profile-avatar img',
+        '.sidebar img.rounded-full',
+        '.sidebar .avatar',
+        '[data-avatar]',
+        'img[alt*="avatar"]',
+        '.profile img',
+        'img[src*="avatar"]',
+        '.sidebar .rounded-full img',
+        // Fuwari 常见头像结构
+        '.profile .avatar',
+        'header img.rounded-full',
+        '.sidebar .flex img.rounded-full'
+      ];
+
+      let avatar = null;
+      for (const sel of selectors) {
+        try {
+          const el = document.querySelector(sel);
+          if (el && el.tagName === 'IMG' && el.src) {
+            avatar = el;
+            break;
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      // 如果还是找不到，尝试在侧边栏中找第一张圆形图片
+      if (!avatar) {
+        const sidebar = document.querySelector('.sidebar, aside');
+        if (sidebar) {
+          const imgs = sidebar.querySelectorAll('img');
+          for (const img of imgs) {
+            // 检查是否是圆形图片（头像通常有 rounded-full）
+            if (img.classList.contains('rounded-full') || 
+                img.className.includes('rounded') ||
+                img.getAttribute('alt')?.toLowerCase().includes('avatar') ||
+                img.getAttribute('alt')?.toLowerCase().includes('profile')) {
+              avatar = img;
+              break;
+            }
+          }
+        }
+      }
+
+      // 调试
+      console.log('[EasterEgg] 头像元素:', avatar);
+      if (avatar) {
+        avatar.setAttribute('data-avatar', 'true');
+        if (!avatar.classList.contains('avatar-spin')) {
+          avatar.classList.add('avatar-spin');
+          avatar.style.transition = 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+
+          // 移除旧监听
+          avatar.removeEventListener('mouseenter', avatar._spinEnter);
+          avatar.removeEventListener('mouseleave', avatar._spinLeave);
+
+          avatar._spinEnter = function() {
+            this.style.transform = 'rotate(360deg)';
+          };
+          avatar._spinLeave = function() {
+            this.style.transform = 'rotate(0deg)';
+          };
+
+          avatar.addEventListener('mouseenter', avatar._spinEnter);
+          avatar.addEventListener('mouseleave', avatar._spinLeave);
+        }
+      } else {
+        console.warn('[EasterEgg] 未找到头像元素，请在 img 上添加 data-avatar 属性');
+      }
+    }
+
+    // 延迟执行确保 DOM 加载
+    setTimeout(applyAvatarRotation, 800);
+    document.addEventListener('astro:page-load', function() {
+      setTimeout(applyAvatarRotation, 500);
+    });
+
+  })();
+</script>
+
+<style is:global>
+  /* ===== 通用 toast 动画 ===== */
+  .easter-egg-toast {
+    animation: eggPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    pointer-events: none;
+    backdrop-filter: blur(12px);
+    user-select: none;
+  }
+  @keyframes eggPop {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  /* ===== 标题彩虹悬停特效 ===== */
+  .rainbow-hover {
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+  .rainbow-hover:hover {
+    background: linear-gradient(
+      135deg,
+      #ff6b6b,
+      #ffd93d,
+      #6bcb77,
+      #4d96ff,
+      #9b59b6,
+      #ff6b6b
+    );
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: rainbowFlow 2s ease infinite;
+  }
+  @keyframes rainbowFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ===== 点击进度条 ===== */
+  .click-progress {
+    animation: progressPulse 0.3s ease;
+  }
+  @keyframes progressPulse {
+    0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  }
+</style>
