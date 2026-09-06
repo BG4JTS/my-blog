@@ -7,7 +7,7 @@ image: ''
 tags: [AI, Transformer, CNN, GPT, AGI]
 category: '技术'
 draft: false
-sticky: false
+sticky: true
 author: 'BG4JTS | DeepSeek'
 ---
 

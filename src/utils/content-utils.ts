@@ -1,24 +1,33 @@
+// src/utils/content-utils.ts
 import { type CollectionEntry, getCollection } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { getCategoryUrl } from "@utils/url-utils.ts";
 
-// // Retrieve posts and sort them by publication date
-async function getRawSortedPosts() {
-	const allBlogPosts = await getCollection("posts", ({ data }) => {
-		return import.meta.env.PROD ? data.draft !== true : true;
-	});
+// ===== 核心排序函数（含置顶逻辑） =====
+export async function getSortedPosts(): Promise<CollectionEntry<"posts">[]> {
+	const posts = await getCollection("posts");
 
-	const sorted = allBlogPosts.sort((a, b) => {
-		const dateA = new Date(a.data.published);
-		const dateB = new Date(b.data.published);
-		return dateA > dateB ? -1 : 1;
-	});
-	return sorted;
+	return posts
+		.filter((post) => !post.data.draft)
+		.sort((a, b) => {
+			// 1. 先按置顶排序（sticky: true 的排在前面）
+			const aSticky = a.data.sticky || false;
+			const bSticky = b.data.sticky || false;
+			if (aSticky && !bSticky) return -1;
+			if (!aSticky && bSticky) return 1;
+
+			// 2. 再按日期排序（最新的在前）
+			return b.data.published.getTime() - a.data.published.getTime();
+		});
 }
 
-export async function getSortedPosts() {
-	const sorted = await getRawSortedPosts();
+// ===== 为文章添加上一篇/下一篇导航 =====
+// 注意：这个函数调用了 getSortedPosts，所以置顶逻辑也会影响导航顺序
+export async function getSortedPostsWithNavigation(): Promise<
+	CollectionEntry<"posts">[]
+> {
+	const sorted = await getSortedPosts();
 
 	for (let i = 1; i < sorted.length; i++) {
 		sorted[i].data.nextSlug = sorted[i - 1].slug;
@@ -31,14 +40,17 @@ export async function getSortedPosts() {
 
 	return sorted;
 }
+
+// ===== 获取文章列表（不含 body，用于列表页） =====
 export type PostForList = {
 	slug: string;
 	data: CollectionEntry<"posts">["data"];
 };
-export async function getSortedPostsList(): Promise<PostForList[]> {
-	const sortedFullPosts = await getRawSortedPosts();
 
-	// delete post.body
+export async function getSortedPostsList(): Promise<PostForList[]> {
+	const sortedFullPosts = await getSortedPosts();
+
+	// 只保留 slug 和 data，删除 body
 	const sortedPostsList = sortedFullPosts.map((post) => ({
 		slug: post.slug,
 		data: post.data,
@@ -46,6 +58,8 @@ export async function getSortedPostsList(): Promise<PostForList[]> {
 
 	return sortedPostsList;
 }
+
+// ===== 获取标签列表 =====
 export type Tag = {
 	name: string;
 	count: number;
@@ -64,7 +78,7 @@ export async function getTagList(): Promise<Tag[]> {
 		});
 	});
 
-	// sort tags
+	// 按字母排序标签
 	const keys: string[] = Object.keys(countMap).sort((a, b) => {
 		return a.toLowerCase().localeCompare(b.toLowerCase());
 	});
@@ -72,6 +86,7 @@ export async function getTagList(): Promise<Tag[]> {
 	return keys.map((key) => ({ name: key, count: countMap[key] }));
 }
 
+// ===== 获取分类列表 =====
 export type Category = {
 	name: string;
 	count: number;
@@ -82,6 +97,7 @@ export async function getCategoryList(): Promise<Category[]> {
 	const allBlogPosts = await getCollection<"posts">("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
+
 	const count: { [key: string]: number } = {};
 	allBlogPosts.forEach((post: { data: { category: string | null } }) => {
 		if (!post.data.category) {
