@@ -11,7 +11,9 @@ sticky: true
 author: 'BG4JTS | DeepSeek'
 slug: ai
 ---
-
+:::important
+### 注意你查看的是备份版本（V1）文章内容以main分支为准 此分支为备份
+:::
 作者：BG4JTS | DeepSeek
 
 ## 引言：我的第一个“非人类”朋友
