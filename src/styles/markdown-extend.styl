@@ -84,7 +84,7 @@
     margin-right: auto
     max-width: 100%
 
-a.card-github
+a.card-github, a.card-github-user, a.card-bilibili, a.card-bilibili-user
   display: block
   background: var(--license-block-bg)
   position: relative
@@ -101,7 +101,7 @@ a.card-github
     .gc-titlebar
       color: var(--btn-content)
 
-    .gc-stars, .gc-forks, .gc-license, .gc-description
+    .gc-stars, .gc-forks, .gc-license, .gc-coin, .gc-description, .gc-title
       color: var(--tw-prose-headings)
 
       &:before
@@ -146,12 +146,27 @@ a.card-github
       background-size: cover
       border-radius: 50%
 
+  .gc-title
+    margin-bottom: 0.35rem
+    font-size: 1.05rem
+    font-weight: 600
+    line-height: 1.5rem
+    color: var(--tw-prose-headings)
+    display: -webkit-box
+    -webkit-line-clamp: 2
+    -webkit-box-orient: vertical
+    overflow: hidden
+
   .gc-description
     margin-bottom: 0.7rem
     font-size: 1rem
     font-weight: 300
     line-height: 1.5rem
     color: var(--tw-prose-body)
+    display: -webkit-box
+    -webkit-line-clamp: 2
+    -webkit-box-orient: vertical
+    overflow: hidden
 
   .gc-infobar
     display: flex
@@ -163,7 +178,7 @@ a.card-github
   .gc-language
     display: none
 
-  .gc-stars, .gc-forks, .gc-license, .github-logo
+  .gc-stars, .gc-forks, .gc-license, .gc-coin, .github-logo, .bilibili-logo
     font-weight: 500
     font-size: 0.875rem
     opacity: 0.9;
@@ -198,6 +213,14 @@ a.card-github
     &:before
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' aria-hidden='true' height='16' viewBox='0 0 16 16' version='1.1' width='16'%3E%3Cpath d='M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z'%3E%3C/path%3E%3C/svg%3E")
 
+  .bilibili-logo
+    font-size: 1.25rem
+
+    &:before
+      background-color: #00a1d6
+      margin-right: 0
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M5 3h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm4.5 5.2v7.6L16 12z'/%3E%3C/svg%3E")
+
   .github-logo
     font-size: 1.25rem
 
@@ -206,12 +229,12 @@ a.card-github
       margin-right: 0
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='32' viewBox='0 0 496 512'%3E%3Cpath fill='%23a1f7cb' d='M165.9 397.4c0 2-2.3 3.6-5.2 3.6c-3.3.3-5.6-1.3-5.6-3.6c0-2 2.3-3.6 5.2-3.6c3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9c2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9c.3 2 2.9 3.3 5.9 2.6c2.9-.7 4.9-2.6 4.6-4.6c-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2c12.8 2.3 17.3-5.6 17.3-12.1c0-6.2-.3-40.4-.3-61.4c0 0-70 15-84.7-29.8c0 0-11.4-29.1-27.8-36.6c0 0-22.9-15.7 1.6-15.4c0 0 24.9 2 38.6 25.8c21.9 38.6 58.6 27.5 72.9 20.9c2.3-16 8.8-27.1 16-33.7c-55.9-6.2-112.3-14.3-112.3-110.5c0-27.5 7.6-41.3 23.6-58.9c-2.6-6.5-11.1-33.3 2.6-67.9c20.9-6.5 69 27 69 27c20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27c13.7 34.7 5.2 61.4 2.6 67.9c16 17.7 25.8 31.5 25.8 58.9c0 96.5-58.9 104.2-114.8 110.5c9.2 7.9 17 22.9 17 46.4c0 33.7-.3 75.4-.3 83.6c0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252C496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2c1.6 1.6 3.9 2.3 5.2 1c1.3-1 1-3.3-.7-5.2c-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9c1.6 1 3.6.7 4.3-.7c.7-1.3-.3-2.9-2.3-3.9c-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2c2.3 2.3 5.2 2.6 6.5 1c1.3-1.3.7-4.3-1.3-6.2c-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9c1.6 2.3 4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2c-1.4-2.3-4-3.3-5.6-2'/%3E%3C/svg%3E")
 
-a.card-github.fetch-waiting
+a.card-github.fetch-waiting, a.card-github-user.fetch-waiting, a.card-bilibili.fetch-waiting
   pointer-events: none
   opacity: 0.7
   transition: opacity 0.15s ease-in-out
 
-  .gc-description, .gc-infobar, .gc-avatar
+  .gc-description, .gc-infobar, .gc-avatar, .gc-title
     background-color: var(--tw-prose-body)
     color: transparent
     opacity: 0.5;
@@ -227,7 +250,7 @@ a.card-github.fetch-waiting
   .gc-description, .gc-infobar
     border-radius: 0.5rem
 
-a.card-github.fetch-error
+a.card-github.fetch-error, a.card-github-user.fetch-error, a.card-bilibili.fetch-error, a.card-bilibili-user.fetch-error
   pointer-events: all
   opacity: 1
 
@@ -239,7 +262,35 @@ a.card-github.fetch-error
   100%
     opacity: 0.15
 
-.card-github, .gc-description, .gc-titlebar, .gc-stars, .gc-forks, .gc-license, .gc-avatar, .github-logo
+.card-github, .card-github-user, .card-bilibili, .card-bilibili-user, .gc-description, .gc-titlebar, .gc-stars, .gc-forks, .gc-license, .gc-coin, .gc-avatar, .gc-title, .github-logo, .bilibili-logo
   transition-property: all
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1)
   transition-duration: 0.15s
+
+/* ===== 各平台指标图标 ===== */
+
+a.card-bilibili
+  .gc-stars:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 2.5v11L13.5 8z'/%3E%3C/svg%3E")
+
+  .gc-forks:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 13.6C8 13.6 2.4 10.2 2.4 6.6A3.2 3.2 0 0 1 8 4.5a3.2 3.2 0 0 1 5.6 2.1c0 3.6-5.6 7-5.6 7z'/%3E%3C/svg%3E")
+
+  .gc-coin:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 1.6a6.4 6.4 0 1 0 0 12.8A6.4 6.4 0 0 0 8 1.6zm0 2.4a4 4 0 1 1 0 8 4 4 0 0 1 0-8z'/%3E%3C/svg%3E")
+
+  .gc-license:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.6l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.4l-3.8 2 .7-4.3-3.1-3 4.3-.6z'/%3E%3C/svg%3E")
+
+a.card-bilibili-user
+  .gc-stars:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 8.2a2.9 2.9 0 1 0 0-5.8 2.9 2.9 0 0 0 0 5.8zm0 1.4c-3.1 0-5.6 1.7-5.6 3.8v.6h11.2v-.6c0-2.1-2.5-3.8-5.6-3.8z'/%3E%3C/svg%3E")
+
+  .gc-forks:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 13.6C8 13.6 2.4 10.2 2.4 6.6A3.2 3.2 0 0 1 8 4.5a3.2 3.2 0 0 1 5.6 2.1c0 3.6-5.6 7-5.6 7z'/%3E%3C/svg%3E")
+
+  .gc-coin:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 2.5v11L13.5 8z'/%3E%3C/svg%3E")
+
+  .gc-license:before
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1.4 14.2 8 8 14.6 1.8 8z'/%3E%3C/svg%3E")
