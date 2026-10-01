@@ -1,5 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
+import { apiProxyUrl } from "./api-proxy.mjs";
 
 /**
  * Creates a GitHub Card component.
@@ -53,12 +54,13 @@ export function GithubCardComponent(properties, children) {
 	const nStars = h(`div#${cardUuid}-stars`, { class: "gc-stars" }, "00K");
 	const nForks = h(`div#${cardUuid}-forks`, { class: "gc-forks" }, "0K");
 	const nLicense = h(`div#${cardUuid}-license`, { class: "gc-license" }, "0K");
+	const proxyUrl = apiProxyUrl("github/repo", { repo });
 
 	const nScript = h(
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript", defer: true },
 		`
-      fetch('https://api.github.com/repos/${repo}', { referrerPolicy: "no-referrer" }).then(response => response.json()).then(data => {
+      const applyRepo = (data) => {
         document.getElementById('${cardUuid}-description').innerText = data.description?.replace(/:[a-zA-Z0-9_]+:/g, '') || "Description not set";
         document.getElementById('${cardUuid}-language').innerText = data.language;
         document.getElementById('${cardUuid}-forks').innerText = Intl.NumberFormat('en-us', { notation: "compact", maximumFractionDigits: 1 }).format(data.forks).replaceAll("\u202f", '');
@@ -69,11 +71,22 @@ export function GithubCardComponent(properties, children) {
         document.getElementById('${cardUuid}-license').innerText = data.license?.spdx_id || "no-license";
         document.getElementById('${cardUuid}-card').classList.remove("fetch-waiting");
         console.log("[GITHUB-CARD] Loaded card for ${repo} | ${cardUuid}.")
-      }).catch(err => {
-        const c = document.getElementById('${cardUuid}-card');
-        c?.classList.add("fetch-error");
-        console.warn("[GITHUB-CARD] (Error) Loading card for ${repo} | ${cardUuid}.")
-      })
+      };
+      // 1) 优先走自有 API 代理（可服务端挂 token，提升限流）
+      fetch('${proxyUrl}')
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json || json.ok !== true || !json.data) throw new Error("proxy unavailable");
+          applyRepo(json.data);
+        })
+        .catch(() => fetch('https://api.github.com/repos/${repo}', { referrerPolicy: "no-referrer" })
+          .then((res) => res.json())
+          .then((data) => applyRepo(data))
+          .catch((err) => {
+            const c = document.getElementById('${cardUuid}-card');
+            c?.classList.add("fetch-error");
+            console.warn("[GITHUB-CARD] (Error) Loading card for ${repo} | ${cardUuid}.", err);
+          }));
     `,
 	);
 

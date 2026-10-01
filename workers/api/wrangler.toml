@@ -1,0 +1,17 @@
+name = "bg4jts-api"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# 自定义域名：要求 bg4jts.cn 的 DNS 已托管在同一 Cloudflare 账号下。
+# 部署后 https://api.bg4jts.cn 直接指向本 Worker（自动创建 DNS 记录 + 证书）。
+routes = [
+  { pattern = "api.bg4jts.cn", custom_domain = true }
+]
+
+[vars]
+# 允许的前端来源：默认 "*"。
+# 想收紧就写成 "https://bg4jts.cn,https://www.bg4jts.cn"。
+ALLOWED_ORIGINS = "*"
+
+# GITHUB_TOKEN 不要写在这里，用 secret：
+#   npx wrangler secret put GITHUB_TOKEN

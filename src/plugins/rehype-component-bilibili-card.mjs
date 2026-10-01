@@ -1,5 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
+import { apiProxyUrl } from "./api-proxy.mjs";
 
 /**
  * Creates a Bilibili video card component.
@@ -31,7 +32,7 @@ export function BilibiliCardComponent(properties, children) {
 		);
 
 	const cardUuid = `BL${Math.random().toString(36).slice(-6)}`; // Collisions are not important
-	const callback = `__bili_cb_${cardUuid.replace(/[^A-Za-z0-9_]/g, "")}`;
+	const proxyUrl = apiProxyUrl("bilibili/video", { bvid });
 
 	const nAvatar = h(`div#${cardUuid}-avatar`, { class: "gc-avatar" });
 	const nUp = h(`div#${cardUuid}-up`, { class: "gc-user" }, "Waiting...");
@@ -64,21 +65,19 @@ export function BilibiliCardComponent(properties, children) {
           done = true;
           card?.classList.add("fetch-error");
         };
-        window.${callback} = (res) => {
-          if (done) return;
+        const num = (n) => Intl.NumberFormat('zh-CN', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0).replace(/[\\u202f\\u00a0]/g, '');
+        const time = (s) => {
+          const total = Math.floor(s || 0);
+          const hh = Math.floor(total / 3600);
+          const mm = Math.floor((total % 3600) / 60);
+          const ss = total % 60;
+          const pad = (v) => (v < 10 ? '0' + v : '' + v);
+          return hh > 0 ? hh + ':' + pad(mm) + ':' + pad(ss) : mm + ':' + pad(ss);
+        };
+        const render = (d) => {
+          if (done || !d) return;
           done = true;
           try {
-            if (!res || res.code !== 0) throw new Error('bilibili code ' + (res && res.code));
-            const d = res.data;
-            const num = (n) => Intl.NumberFormat('zh-CN', { notation: "compact", maximumFractionDigits: 1 }).format(n || 0).replace(/[\\u202f\\u00a0]/g, '');
-            const time = (s) => {
-              const total = Math.floor(s || 0);
-              const hh = Math.floor(total / 3600);
-              const mm = Math.floor((total % 3600) / 60);
-              const ss = total % 60;
-              const pad = (v) => (v < 10 ? '0' + v : '' + v);
-              return hh > 0 ? hh + ':' + pad(mm) + ':' + pad(ss) : mm + ':' + pad(ss);
-            };
             document.getElementById(id + '-up').innerText = d.owner?.name || '未知UP主';
             document.getElementById(id + '-title').innerText = d.title || '';
             document.getElementById(id + '-description').innerText = d.desc && d.desc !== '-' ? d.desc : 'UP主没有写简介';
@@ -93,18 +92,39 @@ export function BilibiliCardComponent(properties, children) {
             }
             card?.classList.remove("fetch-waiting");
           } catch (err) {
-            console.warn("[BILIBILI-CARD] (Error) Loading card for ${bvid}.", err);
-            fail();
-          } finally {
-            try { delete window.${callback}; } catch (_) { /* ignore */ }
+            console.warn("[BILIBILI-CARD] render failed for ${bvid}.", err);
+            card?.classList.add("fetch-error");
           }
         };
-        const s = document.createElement('script');
-        s.src = 'https://api.bilibili.com/x/web-interface/view?bvid=${bvid}&jsonp=jsonp&callback=${callback}';
-        s.async = true;
-        s.onerror = fail;
-        document.head.appendChild(s);
-        setTimeout(() => { if (card?.classList.contains("fetch-waiting")) fail(); }, 8000);
+        // 1) 优先走自有 API 代理（带 CORS + 边缘缓存）
+        fetch('${proxyUrl}', { referrerPolicy: "no-referrer" })
+          .then((res) => res.json())
+          .then((json) => {
+            if (!json || json.ok !== true || !json.data) throw new Error('proxy unavailable');
+            render(json.data);
+          })
+          .catch(() => jsonp());
+        // 2) 代理不可用则回落到直连 JSONP（classic script 请求不带 Origin）
+        function jsonp() {
+          const callback = '__bili_cb_' + id;
+          window[callback] = (res) => {
+            try {
+              if (!res || res.code !== 0) throw new Error('bilibili code ' + (res && res.code));
+              render(res.data);
+            } catch (err) {
+              console.warn("[BILIBILI-CARD] JSONP fallback failed for ${bvid}.", err);
+              fail();
+            } finally {
+              try { delete window[callback]; } catch (_) { /* ignore */ }
+            }
+          };
+          const s = document.createElement('script');
+          s.src = 'https://api.bilibili.com/x/web-interface/view?bvid=${bvid}&jsonp=jsonp&callback=' + callback;
+          s.async = true;
+          s.onerror = fail;
+          document.head.appendChild(s);
+        }
+        setTimeout(() => { if (card?.classList.contains("fetch-waiting")) fail(); }, 12000);
       })();
     `,
 	);

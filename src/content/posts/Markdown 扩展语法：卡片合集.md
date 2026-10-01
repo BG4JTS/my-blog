@@ -23,7 +23,7 @@ slug: card-showcase
 
 ::github{repo="bg4jts/my-blog"}
 
-展示仓库简介、语言、Star 数、Fork 数、许可证，数据由浏览器直接请求 `api.github.com`。
+展示仓库简介、语言、Star 数、Fork 数、许可证；数据经 `api.bg4jts.cn` 代理获取，代理不可用时回落到 `api.github.com`。
 
 ## 二、GitHub 个人主页卡片
 
@@ -38,10 +38,10 @@ slug: card-showcase
 ## 三、B站视频卡片
 
 ```markdown
-::bilibili{bvid="BV1GJ411x7h7"}
+::bilibili{bvid="BV1daYNzrEQN"}
 ```
 
-::bilibili{bvid="BV1GJ411x7h7"}
+::bilibili{bvid="BV1daYNzrEQN"}
 
 展示视频标题、UP 主、简介，以及**播放、点赞、投币、收藏**与时长。`bvid` 必须是 `BV` 开头的 12 位视频号。
 
@@ -55,19 +55,28 @@ slug: card-showcase
 
 展示头像、昵称、签名，以及**粉丝数、获赞数、投稿数、等级**。`uid` 是数字 UID（个人空间地址 `space.bilibili.com/<uid>` 里的那串数字）。
 
-## 五、实现说明（为什么两种取数方式不一样）
+## 五、实现说明（为什么需要 api.bg4jts.cn）
 
-- **GitHub 卡片**：`api.github.com` 返回 `Access-Control-Allow-Origin: *`，浏览器可以直接 `fetch`，所以是实时数据。
-- **B站视频卡片**：`api.bilibili.com` 不返回 CORS 头，而且一旦请求带上外部 `Origin` 就直接 403；但 `view` 接口接受外部 `Referer`，因此改用 JSONP（`<script>` 请求不带 `Origin`）实现，同样是实时数据。
-- **B站个人主页卡片**：`x/web-interface/card` 对非 B站 `Referer` 一律 403，浏览器无法伪造 Referer，做不到实时。因此改为**构建时抓取**：`scripts/fetch-bilibili-users.mjs` 会扫描文章里的 `::bilibili-user{uid="..."}`，用 Node 带 B站 Referer 请求，把结果写进 `src/data/bilibili-users.json`，组件再服务端渲染。
+四张卡片都优先请求自建代理 **https://api.bg4jts.cn**（Cloudflare Worker，源码见仓库 `workers/api`），代理不可用时才回落到直连，因此 Worker 没部署时页面也不会坏。
 
-更新 B站个人卡片数据只需：
+| 上游 | 直接浏览器请求的问题 | 代理如何解决 |
+| --- | --- | --- |
+| `api.bilibili.com` | 无 CORS 头；带外部 `Origin` 直接 403；`card` 接口对非 B站 `Referer` 也 403 | Worker 设置合法 `User-Agent` + `Referer`，再补上 CORS 头 |
+| `api.github.com` | 可用，但未认证限流 60 次/小时/IP | Worker 端可挂 `GITHUB_TOKEN`，提升到 5000 次/小时 |
 
-```shellsession
-pnpm fetch-bili
+代理统一返回 `{ ok, route, data }`，`data` 已经是上游 `data` 字段的直出。目前开放的路由：
+
+```
+GET https://api.bg4jts.cn/bilibili/video?bvid=BV...
+GET https://api.bg4jts.cn/bilibili/user?mid=123456
+GET https://api.bg4jts.cn/github/user?user=BG4JTS
+GET https://api.bg4jts.cn/github/repo?repo=bg4jts/my-blog
+GET https://api.bg4jts.cn/health          # 路由索引，部署自检
 ```
 
-`pnpm build` 之前会自动执行这一步；抓取失败时会保留上一次的缓存数据，不会让构建挂掉。若缓存里没有对应 UID，卡片会显示为「暂无抓取数据」并仍然可点击跳转。
+新增一个 API 只需在 `workers/api/src/index.js` 的 `ROUTES` 里加一条（参数正则 + 上游 URL + 缓存 TTL）。上游主机是硬编码白名单，所以它不是开放代理。
+
+**关于 B站个人卡片的构建时缓存**：`x/web-interface/card` 对非 B站 `Referer` 一律 403，浏览器无法伪造，所以在代理部署之前它是靠构建时抓取（`scripts/fetch-bilibili-users.mjs` → `src/data/bilibili-users.json`）来出数据的。代理部署后，卡片会服务端先用缓存值渲染，再用代理静默刷新一次——既保证无 JS 也能看到内容，也保证数据尽量新。
 
 :::note
 改动 `src/plugins/` 下的卡片组件后，需要先删除 `node_modules/.astro`（Astro 5 的内容渲染缓存）再构建，否则页面会继续用旧组件的 HTML。

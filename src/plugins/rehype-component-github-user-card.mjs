@@ -1,5 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
+import { apiProxyUrl } from "./api-proxy.mjs";
 
 /**
  * Creates a GitHub user (profile) card component.
@@ -28,6 +29,7 @@ export function GithubUserCardComponent(properties, children) {
 		);
 
 	const cardUuid = `GU${Math.random().toString(36).slice(-6)}`; // Collisions are not important
+	const proxyUrl = apiProxyUrl("github/user", { user });
 
 	const nAvatar = h(`div#${cardUuid}-avatar`, { class: "gc-avatar" });
 	const nLogin = h(`div#${cardUuid}-login`, { class: "gc-user" }, user);
@@ -54,7 +56,7 @@ export function GithubUserCardComponent(properties, children) {
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript" },
 		`
-      fetch('https://api.github.com/users/${user}', { referrerPolicy: "no-referrer" }).then(response => response.json()).then(data => {
+      const apply = (data) => {
         if (!data || data.message) throw new Error(data && data.message ? data.message : "empty response");
         document.getElementById('${cardUuid}-name').innerText = data.name || data.login || "${user}";
         document.getElementById('${cardUuid}-login').innerText = data.login || "${user}";
@@ -68,11 +70,22 @@ export function GithubUserCardComponent(properties, children) {
         avatarEl.style.backgroundImage = 'url(' + data.avatar_url + ')';
         avatarEl.style.backgroundColor = 'transparent';
         document.getElementById('${cardUuid}-card').classList.remove("fetch-waiting");
-      }).catch(err => {
-        const c = document.getElementById('${cardUuid}-card');
-        c?.classList.add("fetch-error");
-        console.warn("[GITHUB-USER-CARD] (Error) Loading card for ${user}.", err);
-      })
+      };
+      // 1) 优先走自有 API 代理（可服务端挂 token，提升限流）
+      fetch('${proxyUrl}')
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json || json.ok !== true || !json.data) throw new Error("proxy unavailable");
+          apply(json.data);
+        })
+        .catch(() => fetch('https://api.github.com/users/${user}', { referrerPolicy: "no-referrer" })
+          .then((res) => res.json())
+          .then((data) => apply(data))
+          .catch((err) => {
+            const c = document.getElementById('${cardUuid}-card');
+            c?.classList.add("fetch-error");
+            console.warn("[GITHUB-USER-CARD] (Error) Loading card for ${user}.", err);
+          }));
     `,
 	);
 
