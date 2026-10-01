@@ -38,10 +38,10 @@ slug: card-showcase
 ## 三、B站视频卡片
 
 ```markdown
-::bilibili{bvid="BV1daYNzrEQN"}
+::bilibili{bvid="BV1GJ411x7h7"}
 ```
 
-::bilibili{bvid="BV1daYNzrEQN"}
+::bilibili{bvid="BV1GJ411x7h7"}
 
 展示视频标题、UP 主、简介，以及**播放、点赞、投币、收藏**与时长。`bvid` 必须是 `BV` 开头的 12 位视频号。
 
@@ -78,7 +78,7 @@ GET https://api.bg4jts.cn/health          # 路由索引，部署自检
 
 **关于 B站个人卡片的构建时缓存**：`x/web-interface/card` 对非 B站 `Referer` 一律 403，浏览器无法伪造，所以在代理部署之前它是靠构建时抓取（`scripts/fetch-bilibili-users.mjs` → `src/data/bilibili-users.json`）来出数据的。代理部署后，卡片会服务端先用缓存值渲染，再用代理静默刷新一次——既保证无 JS 也能看到内容，也保证数据尽量新。
 
-**实测提醒**：Cloudflare Workers 的出口 IP 会被 B站 风控（返回 `-412 request was banned`），所以 B站 两个接口在这台代理上通常取不到数据——这正是四张卡片都保留「代理失败就回落」的原因：视频卡落到客户端 JSONP，个人卡用构建时快照。
+**实测提醒**：Cloudflare Workers 的出口 IP 常被 B站 风控（返回 `-412 request was banned`），代理侧已加上浏览器级请求头 + 匿名设备 cookie（buvid3）、Smart Placement，以及可指向国内机器的 `BILI_PROXY_BASE` 逃生通道，但仍不保证成功——这正是四张卡片都保留「代理失败就回落」的原因：视频卡落到客户端 JSONP，个人卡用构建时快照。
 
 :::note
 改动 `src/plugins/` 下的卡片组件后，需要先删除 `node_modules/.astro`（Astro 5 的内容渲染缓存）再构建，否则页面会继续用旧组件的 HTML。

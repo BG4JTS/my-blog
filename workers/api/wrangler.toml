@@ -9,9 +9,21 @@ routes = [
 ]
 
 [vars]
-# 允许的前端来源：默认 "*"。
-# 想收紧就写成 "https://bg4jts.cn,https://www.bg4jts.cn"。
-ALLOWED_ORIGINS = "*"
+# 允许调用本 API 的前端来源（浏览器作用域）。支持 "*.vercel.app" 这类后缀通配。
+ALLOWED_ORIGINS = "https://bg4jts.cn,https://www.bg4jts.cn,http://localhost:4321,http://127.0.0.1:4321"
 
-# GITHUB_TOKEN 不要写在这里，用 secret：
-#   npx wrangler secret put GITHUB_TOKEN
+# 每个 IP 每分钟的请求上限；0 = 关闭限流。
+RATE_LIMIT_PER_MIN = "120"
+
+# GITHUB_TOKEN / SITE_TOKEN 都用 secret，不要写在这里：
+#   npx wrangler secret put GITHUB_TOKEN   # 可选：提升 GitHub 限流
+#   npx wrangler secret put SITE_TOKEN     # 可选：开启站点令牌，前端配 PUBLIC_API_TOKEN
+
+# B站 会拦截数据中心出口 IP（HTTP 412 / code -412 "request was banned"）。
+# Smart Placement 让 Worker 尽量在离上游更近的机房执行，是官方提供的低成本缓解手段。
+[placement]
+mode = "smart"
+
+# 可选逃生通道：设置后 bilibili/* 改为请求该代理（约定用 ?url=<编码后的目标地址>）。
+# 例如你自己的国内小机器：BILI_PROXY_BASE = "https://proxy.example.com/fetch"
+# BILI_PROXY_BASE = ""

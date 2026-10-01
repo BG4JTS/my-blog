@@ -51,6 +51,7 @@ const ROUTES = {
 		required: ["bvid"],
 		ttl: 600,
 		referer: "https://www.bilibili.com/",
+		headers: bilibiliHeaders,
 	},
 	"bilibili/user": {
 		docs: "B站用户信息（昵称/头像/签名/粉丝/获赞/投稿/等级）",
@@ -60,6 +61,7 @@ const ROUTES = {
 		required: ["mid"],
 		ttl: 1800,
 		referer: "https://www.bilibili.com/",
+		headers: bilibiliHeaders,
 	},
 	"github/user": {
 		docs: "GitHub 用户信息（昵称/简介/仓库数/关注者）",
@@ -92,8 +94,59 @@ function githubHeaders(env) {
 	return headers;
 }
 
+/**
+ * Bilibili risk-controls datacenter IPs: `api.bilibili.com` answers HTTP 412 /
+ * code -412 `request was banned`. The community-standard mitigation is to look
+ * like a browser that has already visited bilibili.com — send the full browser
+ * header set and the anonymous buvid3/buvid4 device cookies, which need no login
+ * and come from the finger/spi endpoint. The ban is IP-driven, so this is a
+ * best effort: the client-side JSONP path, the build-time snapshot and
+ * BILI_PROXY_BASE remain the guarantees.
+ */
+const BILIBILI_HEADERS = {
+	Accept: "application/json, text/plain, */*",
+	"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+	Origin: "https://www.bilibili.com",
+	Referer: "https://www.bilibili.com/",
+	"Sec-Fetch-Dest": "empty",
+	"Sec-Fetch-Mode": "cors",
+	"Sec-Fetch-Site": "same-site",
+};
+
+/** Module-scope cache: buvid3 lives for months, we refresh it every 6 hours. */
+const buvidCache = { cookie: "", expiresAt: 0 };
+
+async function getBuvidCookie() {
+	if (buvidCache.cookie && Date.now() < buvidCache.expiresAt) {
+		return buvidCache.cookie;
+	}
+	try {
+		const res = await fetch("https://api.bilibili.com/x/frontend/finger/spi", {
+			headers: { "User-Agent": USER_AGENT, ...BILIBILI_HEADERS },
+			cf: { cacheTtl: 1800, cacheEverything: true },
+		});
+		const json = await res.json();
+		const buvid3 = json?.data?.b_3;
+		const buvid4 = json?.data?.b_4;
+		if (!buvid3) return "";
+		const parts = [`buvid3=${buvid3}`];
+		if (buvid4) parts.push(`buvid4=${buvid4}`);
+		parts.push(`b_nut=${Math.floor(Date.now() / 1000)}`);
+		buvidCache.cookie = parts.join("; ");
+		buvidCache.expiresAt = Date.now() + 6 * 3600 * 1000;
+		return buvidCache.cookie;
+	} catch {
+		return "";
+	}
+}
+
+async function bilibiliHeaders() {
+	const cookie = await getBuvidCookie();
+	return cookie ? { ...BILIBILI_HEADERS, Cookie: cookie } : BILIBILI_HEADERS;
+}
+
 function corsHeaders(request, env) {
-	const allow = (env.ALLOWED_ORIGINS || "*").trim();
+	const allow = (env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS).trim();
 	const origin = request.headers.get("Origin") || "";
 	const allowed =
 		allow === "*"
@@ -127,6 +180,85 @@ function json(body, status, extraHeaders) {
 			...extraHeaders,
 		},
 	});
+}
+
+/**
+ * Abuse protection (auth layer).
+ *
+ * 1. Origin allow-list — browser scope only: any client can omit or forge the
+ *    Origin header, so this is friction, not authentication.
+ * 2. Per-IP rate limit — edge-cache fixed window, counted per colo, so the
+ *    effective limit can be a small multiple across colos.
+ * 3. Site token (opt-in) — active only once the SITE_TOKEN secret exists. The
+ *    token must ship to the browser to be usable, so it is NOT a secret: it
+ *    deters casual scraping and can be rotated to cut off abuse. Real
+ *    authentication for privileged routes belongs behind Cloudflare Access.
+ */
+const DEFAULT_ALLOWED_ORIGINS =
+	"https://bg4jts.cn,https://www.bg4jts.cn,http://localhost:4321,http://127.0.0.1:4321";
+const DEFAULT_RATE_LIMIT_PER_MIN = 120;
+
+function allowedOriginList(env) {
+	return (env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+}
+
+/** `*` allows everything; `*.vercel.app` matches by suffix. */
+function isOriginAllowed(origin, env) {
+	if (!origin) return true; // curl / server-to-server clients send no Origin
+	const list = allowedOriginList(env);
+	if (list.includes("*")) return true;
+	return list.some((pattern) =>
+		pattern.startsWith("*.")
+			? origin.endsWith(pattern.slice(1))
+			: pattern === origin,
+	);
+}
+
+async function isRateLimited(request, env) {
+	const limit = Number(env.RATE_LIMIT_PER_MIN ?? DEFAULT_RATE_LIMIT_PER_MIN);
+	if (!Number.isFinite(limit) || limit <= 0) return false;
+	const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+	const window = Math.floor(Date.now() / 60_000);
+	const key = new Request(
+		`https://ratelimit.bg4jts.invalid/${encodeURIComponent(ip)}/${window}`,
+	);
+	const cache = caches.default;
+	const hit = await cache.match(key);
+	const used = hit ? Number(await hit.text()) || 0 : 0;
+	if (used >= limit) return true;
+	await cache.put(
+		key,
+		new Response(String(used + 1), {
+			headers: { "Cache-Control": "max-age=60" },
+		}),
+	);
+	return false;
+}
+
+/** Returns a `{status, error, message}` issue when the token gate rejects. */
+function siteTokenIssue(request, url, env) {
+	const expected = env.SITE_TOKEN;
+	if (!expected) return null; // gate disabled
+	const provided =
+		url.searchParams.get("k") || request.headers.get("X-Api-Key") || "";
+	if (!provided) {
+		return {
+			status: 401,
+			error: "missing_token",
+			message: "Provide ?k=<token> or the X-Api-Key header.",
+		};
+	}
+	if (provided !== expected) {
+		return {
+			status: 403,
+			error: "invalid_token",
+			message: "The provided token is not valid.",
+		};
+	}
+	return null;
 }
 
 function routeIndex() {
@@ -163,6 +295,19 @@ export default {
 				cors,
 			);
 		}
+		const origin = request.headers.get("Origin") || "";
+		if (!isOriginAllowed(origin, env)) {
+			return json(
+				{
+					ok: false,
+					error: "origin_not_allowed",
+					message: `Origin "${origin}" is not allowed to call this API.`,
+				},
+				403,
+				{ "Cache-Control": "no-store", Vary: "Origin" },
+			);
+		}
+
 		if (pathname === "" || pathname === "health") {
 			return json(
 				{
@@ -185,6 +330,33 @@ export default {
 					message: `Unknown route. Available: ${Object.keys(ROUTES).join(", ")}`,
 				},
 				404,
+				{ ...cors, "Cache-Control": "no-store" },
+			);
+		}
+
+		if (await isRateLimited(request, env)) {
+			return json(
+				{
+					ok: false,
+					route: pathname,
+					error: "rate_limited",
+					message: "Too many requests. Try again in a minute.",
+				},
+				429,
+				{ ...cors, "Cache-Control": "no-store", "Retry-After": "60" },
+			);
+		}
+
+		const tokenIssue = siteTokenIssue(request, url, env);
+		if (tokenIssue) {
+			return json(
+				{
+					ok: false,
+					route: pathname,
+					error: tokenIssue.error,
+					message: tokenIssue.message,
+				},
+				tokenIssue.status,
 				{ ...cors, "Cache-Control": "no-store" },
 			);
 		}
@@ -225,7 +397,13 @@ export default {
 		}
 
 		// ----- fetch upstream (edge-cached for route.ttl seconds) -----
-		const upstreamUrl = route.upstream(params);
+		const directUrl = route.upstream(params);
+		// Escape hatch: relay Bilibili traffic through a China-capable proxy that
+		// accepts ?url=<encoded target>, for when the edge egress IP is banned.
+		const upstreamUrl =
+			env.BILI_PROXY_BASE && pathname.startsWith("bilibili/")
+				? `${env.BILI_PROXY_BASE.replace(/\/$/, "")}?url=${encodeURIComponent(directUrl)}`
+				: directUrl;
 		/** @type {Record<string, string>} */
 		const upstreamHeaders = {
 			"User-Agent": USER_AGENT,
@@ -233,7 +411,7 @@ export default {
 			"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 		};
 		if (route.referer) upstreamHeaders.Referer = route.referer;
-		if (route.headers) Object.assign(upstreamHeaders, route.headers(env));
+		if (route.headers) Object.assign(upstreamHeaders, await route.headers(env));
 
 		let upstream;
 		try {
