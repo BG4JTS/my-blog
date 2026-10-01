@@ -73,6 +73,23 @@ async function fetchUser(uid) {
 	};
 }
 
+function sameUser(previous, next) {
+	if (!previous || !next) return false;
+	for (const key of [
+		"name",
+		"face",
+		"sign",
+		"level",
+		"fans",
+		"following",
+		"likes",
+		"archives",
+	]) {
+		if (previous[key] !== next[key]) return false;
+	}
+	return true;
+}
+
 const uids = collectUids();
 if (uids.length === 0) {
 	console.log(
@@ -83,11 +100,15 @@ if (uids.length === 0) {
 	let changed = false;
 	for (const uid of uids) {
 		try {
-			cache[uid] = await fetchUser(uid);
+			const info = await fetchUser(uid);
+			if (sameUser(cache[uid], info)) {
+				// Keep the stored entry (and its fetchedAt) so builds stay idempotent.
+				console.log(`[bili] uid=${uid} unchanged (${info.name})`);
+				continue;
+			}
+			cache[uid] = info;
 			changed = true;
-			console.log(
-				`[bili] uid=${uid} ok -> ${cache[uid].name} (粉丝 ${cache[uid].fans})`,
-			);
+			console.log(`[bili] uid=${uid} ok -> ${info.name} (粉丝 ${info.fans})`);
 		} catch (error) {
 			const kept = cache[uid] ? " (keeping cached data)" : "";
 			console.warn(`[bili] uid=${uid} failed: ${error.message}${kept}`);
