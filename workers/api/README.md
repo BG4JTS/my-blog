@@ -41,6 +41,16 @@ curl "https://api.bg4jts.cn/bilibili/video?bvid=BV1GJ411x7h7"
 curl "https://api.bg4jts.cn/github/user?user=BG4JTS"
 ```
 
+## 已知限制：B站路由会被风控
+
+实测：Cloudflare Workers 的出口 IP 访问 `api.bilibili.com` 返回 **HTTP 412 / code -412 `request was banned`**（B站按来源 IP 风控；同一请求从国内家宽直连是 200）。因此：
+
+- `bilibili/video`、`bilibili/user` 在这台 Worker 上通常拿不到数据，返回 `502 {"error":"upstream_error","upstreamCode":-412}`；
+- GitHub 两条路由不受影响（实测 200）；
+- 博客侧已对 B站 做容错：视频卡回落到客户端 JSONP（访客自己的 IP，可用），个人卡保留构建时快照（`pnpm fetch-bili`，走本机家宽，可用）。
+
+想彻底绕开风控，可把 B站数据改成「本地抓取 → 推送到 Worker KV」：本地 `fetch-bili` 抓完 POST 到 Worker 存 KV，Worker 直接吐给访客；这样 CF 完全不直连 B站。
+
 ## 部署
 
 ```shellsession
