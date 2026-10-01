@@ -14,18 +14,29 @@ export const API_PROXY_BASE = "https://api.bg4jts.cn";
  * the token gate on. It is embedded in the published HTML by design, so treat it
  * as abuse friction plus a rotation handle, never as a secret.
  */
-const API_TOKEN = globalThis.process?.env?.PUBLIC_API_TOKEN?.trim() || "";
+export const API_PROXY_TOKEN =
+	globalThis.process?.env?.PUBLIC_API_TOKEN?.trim() || "";
 
 /**
- * Build an absolute proxy URL.
+ * Inline helper injected into card scripts. The token is read from the
+ * `<meta name="api-token">` tag the layout renders on every build, so it is never
+ * baked into the cached markdown render — rotating the token takes effect with
+ * the next build instead of staying frozen in a stale content cache.
+ */
+export const CLIENT_API_TOKEN_HELPER = `
+        const apiToken = document.querySelector('meta[name="api-token"]')?.content || "";
+        const withToken = (url) => (apiToken
+          ? url + (url.includes("?") ? "&" : "?") + "k=" + encodeURIComponent(apiToken)
+          : url);`;
+
+/**
+ * Build an absolute proxy URL (without the token; the client helper adds it).
  *
  * @param {string} route - Route name, e.g. "bilibili/video".
  * @param {Record<string, string>} [params] - Allow-listed query parameters.
  * @returns {string}
  */
 export function apiProxyUrl(route, params = {}) {
-	const search = new URLSearchParams(params);
-	if (API_TOKEN) search.set("k", API_TOKEN);
-	const query = search.toString();
+	const query = new URLSearchParams(params).toString();
 	return `${API_PROXY_BASE}/${route}${query ? `?${query}` : ""}`;
 }

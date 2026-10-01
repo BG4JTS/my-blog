@@ -1,7 +1,7 @@
 /// <reference types="mdast" />
 import { readFileSync } from "node:fs";
 import { h } from "hastscript";
-import { apiProxyUrl } from "./api-proxy.mjs";
+import { apiProxyUrl, CLIENT_API_TOKEN_HELPER } from "./api-proxy.mjs";
 
 /**
  * Creates a Bilibili user (space) card component.
@@ -106,6 +106,7 @@ export function BilibiliUserCardComponent(properties, children) {
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript" },
 		`
+${CLIENT_API_TOKEN_HELPER}
       (function () {
         const id = '${cardUuid}';
         const card = document.getElementById(id + '-card');
@@ -114,7 +115,7 @@ export function BilibiliUserCardComponent(properties, children) {
           const el = document.getElementById(id + '-' + suffix);
           if (el && value !== undefined && value !== null && value !== '') el.innerText = value;
         };
-        fetch('${proxyUrl}', { referrerPolicy: "no-referrer" })
+        fetch(withToken('${proxyUrl}'), { referrerPolicy: "no-referrer" })
           .then((res) => res.json())
           .then((json) => {
             if (!json || json.ok !== true || !json.data) throw new Error('proxy unavailable');

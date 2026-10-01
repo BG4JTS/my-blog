@@ -13,6 +13,7 @@ import KeyboardShortcuts from '@components/widget/KeyboardShortcuts.astro';
 
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import { profileConfig, siteConfig } from "@/config";
+import { API_PROXY_TOKEN } from "../plugins/api-proxy.mjs";
 import {
 	AUTO_MODE,
 	BANNER_HEIGHT,
@@ -136,6 +137,8 @@ const bannerOffset =
 		<meta name="twitter:title" content={pageTitle}>
 		<meta name="twitter:description" content={description || pageTitle}>
 		<meta name="twitter:image" content={ogImage}>
+
+		{API_PROXY_TOKEN && <meta name="api-token" content={API_PROXY_TOKEN} />}
 
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />

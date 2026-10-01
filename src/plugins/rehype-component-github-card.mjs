@@ -1,6 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
-import { apiProxyUrl } from "./api-proxy.mjs";
+import { apiProxyUrl, CLIENT_API_TOKEN_HELPER } from "./api-proxy.mjs";
 
 /**
  * Creates a GitHub Card component.
@@ -60,6 +60,7 @@ export function GithubCardComponent(properties, children) {
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript", defer: true },
 		`
+${CLIENT_API_TOKEN_HELPER}
       const applyRepo = (data) => {
         document.getElementById('${cardUuid}-description').innerText = data.description?.replace(/:[a-zA-Z0-9_]+:/g, '') || "Description not set";
         document.getElementById('${cardUuid}-language').innerText = data.language;
@@ -73,7 +74,7 @@ export function GithubCardComponent(properties, children) {
         console.log("[GITHUB-CARD] Loaded card for ${repo} | ${cardUuid}.")
       };
       // 1) 优先走自有 API 代理（可服务端挂 token，提升限流）
-      fetch('${proxyUrl}')
+      fetch(withToken('${proxyUrl}'))
         .then((res) => res.json())
         .then((json) => {
           if (!json || json.ok !== true || !json.data) throw new Error("proxy unavailable");

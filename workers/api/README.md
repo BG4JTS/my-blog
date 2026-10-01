@@ -119,3 +119,13 @@ npx wrangler dev          # 默认 http://localhost:8787
 - 改完 `src/plugins/` 里的卡片组件后，先删除 `node_modules/.astro`（Astro 5 的内容渲染缓存）再构建，否则页面会继续用旧组件的 HTML。
 - 更新 B 站 UP 主卡片数据：`pnpm fetch-bili`（从本机家宽抓取）。`pnpm build` 的 `prebuild` 只在缓存超过 7 天时自动刷新，所以构建不会每次改动这个 JSON。
 - 演示文章里的 GitHub 用户名 / B 站 UID / BV 号都是示例，按需替换即可。
+
+## 站点令牌已启用（轮换备忘）
+
+`SITE_TOKEN` 已设为 Worker secret，因此 `bilibili/*`、`github/*` 现在必须带 `?k=<token>` 或 `X-Api-Key`；`/health` 与 `/` 仍公开。
+
+- 令牌值：仓库外文件 `F:\blog\secrets\site-token.txt`（43 字符，勿提交、勿外发）。
+- 前端取用方式：Layout 渲染 `<meta name="api-token">`，卡片脚本读它再拼到请求上（`CLIENT_API_TOKEN_HELPER`）。**不要**把令牌在构建时直接拼进卡片 URL——那部分 HTML 会被 Astro 内容缓存复用，轮换后不生效。
+- Vercel 侧需设 `PUBLIC_API_TOKEN`（Production + Preview），值同上；不设则卡片自动走回退（JSONP / 直连 GitHub / 构建时快照），不会报错。
+- 本地构建：`$env:PUBLIC_API_TOKEN = (Get-Content F:\blog\secrets\site-token.txt -Raw); pnpm build`。改/删令牌后要连 `node_modules\.vite` 一起清，否则 Vite 会复用旧的配置包。
+- 轮换：生成新值 → `npx wrangler secret put SITE_TOKEN` → 更新 Vercel 的 `PUBLIC_API_TOKEN` → 重新部署。

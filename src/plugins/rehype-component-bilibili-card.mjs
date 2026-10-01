@@ -1,6 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
-import { apiProxyUrl } from "./api-proxy.mjs";
+import { apiProxyUrl, CLIENT_API_TOKEN_HELPER } from "./api-proxy.mjs";
 
 /**
  * Creates a Bilibili video card component.
@@ -56,6 +56,7 @@ export function BilibiliCardComponent(properties, children) {
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript" },
 		`
+${CLIENT_API_TOKEN_HELPER}
       (function () {
         const id = '${cardUuid}';
         const card = document.getElementById(id + '-card');
@@ -97,7 +98,7 @@ export function BilibiliCardComponent(properties, children) {
           }
         };
         // 1) 优先走自有 API 代理（带 CORS + 边缘缓存）
-        fetch('${proxyUrl}', { referrerPolicy: "no-referrer" })
+        fetch(withToken('${proxyUrl}'), { referrerPolicy: "no-referrer" })
           .then((res) => res.json())
           .then((json) => {
             if (!json || json.ok !== true || !json.data) throw new Error('proxy unavailable');

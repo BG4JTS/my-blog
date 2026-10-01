@@ -1,6 +1,6 @@
 /// <reference types="mdast" />
 import { h } from "hastscript";
-import { apiProxyUrl } from "./api-proxy.mjs";
+import { apiProxyUrl, CLIENT_API_TOKEN_HELPER } from "./api-proxy.mjs";
 
 /**
  * Creates a GitHub user (profile) card component.
@@ -56,6 +56,7 @@ export function GithubUserCardComponent(properties, children) {
 		`script#${cardUuid}-script`,
 		{ type: "text/javascript" },
 		`
+${CLIENT_API_TOKEN_HELPER}
       const apply = (data) => {
         if (!data || data.message) throw new Error(data && data.message ? data.message : "empty response");
         document.getElementById('${cardUuid}-name').innerText = data.name || data.login || "${user}";
@@ -72,7 +73,7 @@ export function GithubUserCardComponent(properties, children) {
         document.getElementById('${cardUuid}-card').classList.remove("fetch-waiting");
       };
       // 1) 优先走自有 API 代理（可服务端挂 token，提升限流）
-      fetch('${proxyUrl}')
+      fetch(withToken('${proxyUrl}'))
         .then((res) => res.json())
         .then((json) => {
           if (!json || json.ok !== true || !json.data) throw new Error("proxy unavailable");
