@@ -11,6 +11,15 @@ sticky: true
 author: 'BG4JTS | DeepSeek'
 slug: ai
 ---
+:::important
+### 本文经过修改
+在原来v1的基础上主要对文章的**事实性错误** **语义错误** **病句** **可能引起误解的句子** **过于主观的描述** 以及其他问题进行了修改
+
+
+对于原（v1）版本可在 https://github.com/BG4JTS/my-blog/tree/backup/cnn2tf-v1 进行查看
+
+本文不再进行大版本修改 但仍有可能出现错误 您可以通过本文评论区或“fk@bg4jts.cn”进行勘误
+:::
 
 作者：BG4JTS | DeepSeek
 

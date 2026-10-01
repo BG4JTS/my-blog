@@ -113,3 +113,9 @@ npx wrangler dev          # 默认 http://localhost:8787
 - `GITHUB_TOKEN` 只以 secret 形式存在 Worker 环境，不会进前端产物。
 - 需要收紧来源时把 `ALLOWED_ORIGINS` 改成具体域名列表。
 - 建议在 Cloudflare 控制台给该 Worker 加 Rate limiting 规则，防止被刷。
+
+## 本地维护备忘
+
+- 改完 `src/plugins/` 里的卡片组件后，先删除 `node_modules/.astro`（Astro 5 的内容渲染缓存）再构建，否则页面会继续用旧组件的 HTML。
+- 更新 B 站 UP 主卡片数据：`pnpm fetch-bili`（从本机家宽抓取）。`pnpm build` 的 `prebuild` 只在缓存超过 7 天时自动刷新，所以构建不会每次改动这个 JSON。
+- 演示文章里的 GitHub 用户名 / B 站 UID / BV 号都是示例，按需替换即可。
