@@ -1,3 +1,4 @@
+import { DEFAULT_OG_IMAGE } from "@constants/constants";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 
@@ -41,4 +42,18 @@ export function getDir(path: string): string {
 
 export function url(path: string) {
 	return joinUrl("", import.meta.env.BASE_URL, path);
+}
+
+/**
+ * Resolve the Open Graph / Twitter preview image to an absolute URL.
+ *
+ * - absolute `http(s)` URLs are returned as-is
+ * - public paths (starting with `/`) are resolved against `base`
+ * - empty values and content-relative paths fall back to the default image
+ */
+export function resolveOgImage(image: string | undefined, base: URL): string {
+	const value = image?.trim();
+	if (value && /^https?:\/\//i.test(value)) return value;
+	if (value?.startsWith("/")) return new URL(url(value), base).href;
+	return new URL(url(DEFAULT_OG_IMAGE), base).href;
 }

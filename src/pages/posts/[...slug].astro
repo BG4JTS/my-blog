@@ -8,8 +8,8 @@ import Markdown from "@components/misc/Markdown.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getSortedPosts } from "@utils/content-utils";
-import { getDir, getPostUrlBySlug } from "@utils/url-utils";
+import { getSortedPostsWithNavigation } from "@utils/content-utils";
+import { getDir, getPostUrlBySlug, resolveOgImage } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import { licenseConfig } from "src/config";
 import ImageWrapper from "../../components/misc/ImageWrapper.astro";
@@ -23,7 +23,7 @@ import RelatedPosts from '@components/widget/RelatedPosts.astro';
 import UpdateNotice from '@components/widget/UpdateNotice.astro';
 
 export async function getStaticPaths() {
-	const blogEntries = await getSortedPosts();
+	const blogEntries = await getSortedPostsWithNavigation();
 	return blogEntries.map((entry) => ({
 		params: { slug: entry.slug },
 		props: { entry },
@@ -41,12 +41,16 @@ const jsonLd = {
 	headline: entry.data.title,
 	description: entry.data.description || entry.data.title,
 	keywords: entry.data.tags,
+	image: [resolveOgImage(entry.data.image, Astro.url)],
 	author: {
 		"@type": "Person",
 		name: profileConfig.name,
 		url: Astro.site,
 	},
 	datePublished: formatDateToYYYYMMDD(entry.data.published),
+	dateModified: formatDateToYYYYMMDD(
+		entry.data.updated ?? entry.data.published,
+	),
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
@@ -60,6 +64,9 @@ const jsonLd = {
 	lang={entry.data.lang} 
 	setOGTypeArticle={true} 
 	headings={headings}
+	image={entry.data.image}
+	published={entry.data.published}
+	updated={entry.data.updated}
 >
 	<script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
 	
@@ -142,7 +149,7 @@ const jsonLd = {
 			}
 
 			<!-- 分享按钮 -->
-			<ShareButtons url={Astro.url} title={entry.data.title} />
+			<ShareButtons url={Astro.url.href} title={entry.data.title} />
 
 			<!-- ✅ 相关文章推荐 -->
 			<RelatedPosts currentSlug={entry.slug} tags={entry.data.tags || []} limit={4} />

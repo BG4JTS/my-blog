@@ -30,10 +30,10 @@ export const siteConfig: SiteConfig = {
 		depth: 2, // Maximum heading depth to show in the table, from 1 to 3
 	},
     favicon: [
-    { src: '/favicon.ico', sizes: 'any', theme: null },
-    { src: '/favicon-16x16.png', sizes: '16x16', theme: null },
-    { src: '/favicon-32x32.png', sizes: '32x32', theme: null },
-    { src: '/apple-touch-icon.png', sizes: '180x180', theme: null },
+    { src: '/favicon.ico', sizes: 'any' },
+    { src: '/favicon.svg', sizes: 'any' },
+    { src: '/favicon-96x96.png', sizes: '96x96' },
+    { src: '/apple-touch-icon.png', sizes: '180x180' },
     ],
 };
 

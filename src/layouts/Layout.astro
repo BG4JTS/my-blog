@@ -25,7 +25,7 @@ import {
 } from "../constants/constants";
 import { defaultFavicons } from "../constants/icon";
 import type { Favicon } from "../types/config";
-import { pathsEqual, url } from "../utils/url-utils";
+import { pathsEqual, resolveOgImage, url } from "../utils/url-utils";
 import "katex/dist/katex.css";
 
 interface Props {
@@ -34,9 +34,21 @@ interface Props {
 	description?: string;
 	lang?: string;
 	setOGTypeArticle?: boolean;
+	image?: string;
+	published?: Date;
+	updated?: Date;
 }
 
-let { title, banner, description, lang, setOGTypeArticle } = Astro.props;
+let {
+	title,
+	banner,
+	description,
+	lang,
+	setOGTypeArticle,
+	image,
+	published,
+	updated,
+} = Astro.props;
 
 // apply a class to the body element to decide the height of the banner, only used for initial page load
 // Swup can update the body for each page visit, but it's after the page transition, causing a delay for banner height change
@@ -71,6 +83,12 @@ if (!lang) {
 }
 const siteLang = lang.replace("_", "-");
 
+// --- SEO: self-referencing canonical + social preview image ---
+const canonical = Astro.url.href;
+const ogImage = resolveOgImage(image, Astro.url);
+// og:locale expects the underscored locale form (e.g. "zh_CN")
+const ogLocale = lang;
+
 const bannerOffsetByPosition = {
 	top: `${BANNER_HEIGHT_EXTEND}vh`,
 	center: `${BANNER_HEIGHT_EXTEND / 2}vh`,
@@ -102,10 +120,22 @@ const bannerOffset =
         <meta property="og:type" content="website" />
         )}
 
+		<link rel="canonical" href={canonical} />
+
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:locale" content={ogLocale} />
+		{published ? (
+			<meta property="article:published_time" content={published.toISOString()} />
+		) : null}
+		{updated ? (
+			<meta property="article:modified_time" content={updated.toISOString()} />
+		) : null}
+
 		<meta name="twitter:card" content="summary_large_image">
 		<meta property="twitter:url" content={Astro.url}>
 		<meta name="twitter:title" content={pageTitle}>
 		<meta name="twitter:description" content={description || pageTitle}>
+		<meta name="twitter:image" content={ogImage}>
 
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
