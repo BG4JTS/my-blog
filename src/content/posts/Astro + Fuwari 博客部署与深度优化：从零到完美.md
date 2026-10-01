@@ -1,7 +1,7 @@
 ---
 title: Astro + Fuwari 博客深度部署与优化全记录
 published: 2026-09-06
-description: '基于真实踩坑经验，完整记录 Astro + Fuwari 博客从零搭建到深度优化的全过程。涵盖环境配置、主题定制、评论系统、访问统计、自定义404、分享组件、工具聚合、国内加速等 15+ 功能模块的实战配置。'
+description: '基于真实踩坑经验，完整记录 Astro + Fuwari 博客从零搭建到深度优化的全过程。涵盖环境配置、主题定制、评论系统、访问统计、分享组件、工具聚合、国内加速等 15+ 功能模块的实战配置。'
 image: ''
 tags: [Astro, Fuwari, 博客搭建, Vercel, Cloudflare, 性能优化]
 category: '技术'
