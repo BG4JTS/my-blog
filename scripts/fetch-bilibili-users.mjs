@@ -90,10 +90,31 @@ function sameUser(previous, next) {
 	return true;
 }
 
-const uids = collectUids();
+const FORCE = process.argv.includes("--force");
+const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+const allUids = collectUids();
+const cached = readCache();
+// Counters like 粉丝 change constantly, so an entry is only refreshed once it is
+// older than MAX_AGE_MS (or when --force is passed): builds stay idempotent and
+// the cache still self-heals.
+const uids = FORCE
+	? allUids
+	: allUids.filter((uid) => {
+			const fetchedAt = cached[uid]?.fetchedAt;
+			if (!fetchedAt) return true;
+			const age = Date.now() - Date.parse(fetchedAt);
+			if (Number.isFinite(age) && age >= 0 && age < MAX_AGE_MS) {
+				console.log(
+					`[bili] uid=${uid} fresh (${Math.floor(age / 86_400_000)}d old), skipped`,
+				);
+				return false;
+			}
+			return true;
+		});
 if (uids.length === 0) {
 	console.log(
-		"[bili] no ::bilibili-user{uid=...} directive found, nothing to fetch.",
+		"[bili] nothing to fetch (no directive, or every entry is already fresh).",
 	);
 } else {
 	const cache = readCache();

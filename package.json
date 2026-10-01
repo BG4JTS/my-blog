@@ -8,7 +8,7 @@
     "check": "astro check",
     "build": "astro build && pagefind --site dist",
     "prebuild": "node scripts/fetch-bilibili-users.mjs",
-    "fetch-bili": "node scripts/fetch-bilibili-users.mjs",
+    "fetch-bili": "node scripts/fetch-bilibili-users.mjs --force",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit --isolatedDeclarations",
