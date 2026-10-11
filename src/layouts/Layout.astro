@@ -1,5 +1,5 @@
 ---
-// ==================== 1. 导入区（新增 import） ====================
+// ==================== 1. 导入区（先禁用） ====================
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
@@ -104,6 +104,23 @@ const bannerOffset =
 	  data-overlayscrollbars-initialize
 >
 	<head>
+		<!-- Umami 基础统计 -->
+		<script
+			defer
+			is:inline
+			src="https://stats.bg4jts.cn/script.js"
+			data-website-id="a9d58931-f5f7-4550-b8d6-50da14aae09c"
+			data-host-url="https://stats.bg4jts.cn"
+		></script>
+
+		<!-- Umami 热图记录 -->
+		<script
+			defer
+			is:inline
+			src="https://stats.bg4jts.cn/recorder.js"
+			data-website-id="a9d58931-f5f7-4550-b8d6-50da14aae09c"
+			data-host-url="https://stats.bg4jts.cn"
+		></script>
 
 		<title>{pageTitle}</title>
 
@@ -479,6 +496,11 @@ const setup = () => {
 		const heightExtend = document.getElementById('page-height-extend')
 		if (heightExtend) {
 			heightExtend.classList.remove('hidden')
+		}
+
+		// ✅ Umami: 通知统计脚本记录新的页面访问（配合 Swup 使用）
+		if (window.umami && typeof window.umami.track === 'function') {
+			window.umami.track();
 		}
 	});
 	window.swup.hooks.on('visit:end', (_visit: {to: {url: string}}) => {
